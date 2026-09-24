@@ -1,0 +1,47 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true
+
+spring:
+  application:
+    name: finvote
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: true
+  web:
+    resources:
+      cache:
+        period: 0
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
+      schema-locations: classpath:schema.sql
+
+finvote:
+  # SQLite 数据库文件（相对路径基于启动目录；也可用绝对路径）
+  # 容器部署时由 FINVOTE_DB_PATH 指向挂载卷，保证容器重建后数据不丢
+  db-path: ${FINVOTE_DB_PATH:data/finvote.db}
+  # 令牌签名密钥，正式部署请务必修改（可用环境变量 FINVOTE_SECRET 覆盖）
+  secret: ${FINVOTE_SECRET:finvote-dev-secret-change-me-in-production}
+  # 后台管理员令牌有效期（分钟）
+  admin-token-minutes: 720
+  # 评委令牌有效期（分钟）
+  judge-token-minutes: 720
+  # 首次启动时自动创建的管理员账号（仅在库中没有管理员时生效）
+  bootstrap-admin-username: ${FINVOTE_ADMIN_USERNAME:admin}
+  bootstrap-admin-password: ${FINVOTE_ADMIN_PASSWORD:admin123}
+
+logging:
+  level:
+    root: INFO
+    com.finvote: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%thread] %logger{0} - %msg%n"

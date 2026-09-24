@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>总分大屏 · FinVote 评赛系统</title>
+<style>
+  :root{
+    /* deep-sky dark variant — same hue families as the light system */
+    --bg:        oklch(20.6% 0.061 266);
+    --surface:   oklch(26.4% 0.077 265);
+    --surface-2: oklch(31.2% 0.086 264);
+    --fg:        oklch(96% 0.019 266);
+    --muted:     oklch(73.2% 0.062 262);
+    --border:    oklch(36.6% 0.090 265);
+    --accent:    oklch(69.3% 0.162 259);
+
+    --ok-ink:     oklch(78.7% 0.146 161);
+    --warn-ink:   oklch(84.2% 0.126 84);
+    --danger-ink: oklch(73.2% 0.165 28);
+    --info-ink:   oklch(76.3% 0.122 257);
+
+    --accent-soft: color-mix(in oklch, var(--accent) 16%, transparent);
+    --fg-soft:     color-mix(in oklch, var(--fg) 8%, transparent);
+    --fg-softer:   color-mix(in oklch, var(--fg) 4.5%, transparent);
+    --ok-soft:     color-mix(in oklch, var(--ok-ink) 16%, transparent);
+    --warn-soft:   color-mix(in oklch, var(--warn-ink) 15%, transparent);
+    --info-soft:   color-mix(in oklch, var(--info-ink) 14%, transparent);
+
+    --font-display: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-body:    -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+    --radius:10px; --radius-lg:14px;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;color:var(--fg);background-color:var(--bg);background-image:radial-gradient(125% 90% at 14% -10%,oklch(31% 0.105 262) 0%,oklch(25% 0.080 264) 32%,transparent 68%),radial-gradient(75% 65% at 100% 108%,oklch(33% 0.11 258) 0%,transparent 60%);font-family:var(--font-body);-webkit-font-smoothing:antialiased;overflow:hidden}
+  p{margin:0}
+  button{font:inherit;cursor:pointer}
+  .mono,.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  .pill{display:inline-flex;align-items:center;gap:7px;padding:5px 14px;border-radius:999px;font-family:var(--font-mono);font-size:13px;letter-spacing:0.02em;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-ink)}
+  .pill.info{background:var(--info-soft);color:var(--info-ink)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn-ink)}
+  .pill.idle{background:var(--fg-soft);color:var(--muted)}
+  .dot{width:8px;height:8px;border-radius:50%;background:currentColor;flex:0 0 auto}
+  .live .dot{animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  .stage{height:100%;display:flex;flex-direction:column;padding:26px 38px 20px;gap:18px}
+
+  .s-top{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;flex:0 0 auto}
+  .s-eyebrow{font-family:var(--font-mono);font-size:14px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .s-title{font-family:var(--font-display);font-size:clamp(26px,2.1vw,42px);font-weight:660;letter-spacing:-0.025em;line-height:1.1}
+  .s-sub{margin-top:8px;color:var(--muted);font-size:clamp(15px,1.1vw,21px)}
+  .s-right{display:flex;align-items:center;gap:18px;flex:0 0 auto}
+  .clock{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:clamp(28px,2.4vw,48px);font-weight:600;letter-spacing:-0.02em}
+  .fs-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:10px;padding:10px 12px;font-size:13px;transition:border-color .15s ease,color .15s ease}
+  .fs-btn:hover{border-color:var(--fg);color:var(--fg)}
+
+  .s-main{flex:1 1 auto;display:grid;grid-template-columns:1fr 30%;gap:20px;min-height:0}
+  @media (max-width:1100px){.s-main{grid-template-columns:1fr}}
+  @media (max-height:640px){.stage{height:auto;overflow:visible}body{overflow:auto}}
+
+  .board{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .board-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 26px;border-bottom:1px solid var(--border)}
+  .board-head .bh-t{font-family:var(--font-display);font-size:clamp(18px,1.4vw,26px);font-weight:640}
+  .board-head .bh-m{font-family:var(--font-mono);font-size:clamp(13px,0.95vw,17px);color:var(--muted)}
+  .board-body{padding:8px 14px 14px;overflow:auto;flex:1}
+
+  .rk{display:grid;grid-template-columns:74px 1fr auto;gap:20px;align-items:center;padding:14px 12px;border-bottom:1px solid var(--border)}
+  .rk:last-child{border-bottom:0}
+  .rk .rank{font-family:var(--font-mono);font-size:clamp(24px,2vw,38px);font-weight:700;letter-spacing:-0.02em;color:var(--muted);text-align:center}
+  .rk .rk-name{font-family:var(--font-display);font-size:clamp(24px,1.95vw,40px);font-weight:630;letter-spacing:-0.02em;line-height:1.12}
+  .rk .rk-sub{color:var(--muted);font-size:clamp(14px,1.02vw,20px);margin-top:5px}
+  .rk .rk-bar{margin-top:9px;height:8px;border-radius:999px;background:var(--fg-soft);overflow:hidden;max-width:760px}
+  .rk .rk-bar i{display:block;height:100%;background:var(--muted);border-radius:999px;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+  .rk .rk-score{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:clamp(34px,3vw,64px);font-weight:600;letter-spacing:-0.03em;text-align:right;min-width:170px}
+  .rk .rk-score small{font-size:0.34em;color:var(--muted);font-weight:500;margin-left:6px}
+  .rk .rk-eff{display:block;font-family:var(--font-mono);font-size:clamp(11px,0.82vw,15px);color:var(--muted);font-weight:400;letter-spacing:0;margin-top:4px;text-align:right}
+
+  .rk.lead{background:var(--accent-soft);border-radius:var(--radius);border-bottom-color:transparent}
+  .rk.lead .rank,.rk.lead .rk-score{color:var(--fg)}
+  .rk.lead .rk-bar i{background:var(--accent)}
+
+  .rk-masked{opacity:0.96}
+  .mask-tag{font-family:var(--font-mono);font-size:clamp(13px,1vw,18px);color:var(--muted);letter-spacing:0.14em}
+
+  .side{display:flex;flex-direction:column;gap:18px;min-height:0}
+  .now{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;flex:0 0 auto}
+  .now .now-l{font-family:var(--font-mono);font-size:13px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted)}
+  .now .now-name{font-family:var(--font-display);font-size:clamp(22px,1.7vw,34px);font-weight:650;letter-spacing:-0.02em;line-height:1.14;margin-top:10px}
+  .now .now-sub{color:var(--muted);font-size:clamp(14px,1vw,19px);margin-top:8px}
+  .now .now-prog{margin-top:16px;display:flex;align-items:center;gap:12px}
+  .now .now-track{flex:1;height:9px;border-radius:999px;background:var(--fg-soft);overflow:hidden}
+  .now .now-track i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .4s ease}
+  .now .now-count{font-family:var(--font-mono);font-size:clamp(15px,1.1vw,21px);font-weight:600}
+
+  .judges{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 22px;flex:1;min-height:0;overflow:auto}
+  .judges .jg-t{font-family:var(--font-mono);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .jg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .jg{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--border);border-radius:10px}
+  .jg .jd{width:10px;height:10px;border-radius:50%;background:var(--fg-soft);flex:0 0 auto}
+  .jg.done .jd{background:var(--accent)}
+  .jg .jn{font-size:clamp(13px,0.96vw,17px);font-weight:600}
+  .jg .js{font-family:var(--font-mono);font-size:clamp(10px,0.76vw,13px);color:var(--muted)}
+  .jg.done{border-color:color-mix(in oklch,var(--accent) 34%,var(--border))}
+
+  .rule{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 22px;flex:0 0 auto}
+  .rule .rl-t{font-family:var(--font-mono);font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .rule p{font-size:clamp(14px,1vw,19px);color:var(--fg);line-height:1.5}
+  .rule .rl-sub{color:var(--muted);font-size:clamp(13px,0.92vw,17px);margin-top:8px}
+
+  .s-foot{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:20px;border-top:1px solid var(--border);padding-top:14px;color:var(--muted);font-family:var(--font-mono);font-size:clamp(12px,0.86vw,16px)}
+
+  :focus-visible{outline:2px solid color-mix(in oklch,var(--accent) 55%,transparent);outline-offset:3px;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="stage" data-od-id="scoreboard">
+  <header class="s-top" data-od-id="board-header">
+    <div>
+      <div class="s-eyebrow">FINVOTE · 现场总分大屏</div>
+      <div class="s-title" id="comp-name">—</div>
+      <div class="s-sub" id="comp-sub">—</div>
+    </div>
+    <div class="s-right">
+      <span class="pill info live" id="reveal-pill"><span class="dot"></span>评分进行中</span>
+      <span class="pill idle" id="submit-pill">已收到 0 / 0 位</span>
+      <div class="clock" id="clock">--:--</div>
+      <button type="button" class="fs-btn" id="btn-fs" aria-label="全屏显示" data-od-id="btn-fullscreen">全屏</button>
+    </div>
+  </header>
+
+  <main class="s-main">
+    <section class="board" data-od-id="board-rank">
+      <div class="board-head">
+        <span class="bh-t" id="board-title">各项目现场评分进度</span>
+        <span class="bh-m" id="board-note">—</span>
+      </div>
+      <div class="board-body" id="rank-list"></div>
+    </section>
+
+    <aside class="side">
+      <div class="now" data-od-id="board-now">
+        <div class="now-l">正在评审</div>
+        <div class="now-name" id="now-name">—</div>
+        <div class="now-sub" id="now-sub">—</div>
+        <div class="now-prog">
+          <span class="now-count" id="now-count">0 / 0</span>
+          <span class="now-track"><i id="now-bar" style="width:0%"></i></span>
+        </div>
+      </div>
+      <div class="judges" data-od-id="board-judges">
+        <div class="jg-t">评委提交状态</div>
+        <div class="jg-grid" id="judge-grid"></div>
+      </div>
+      <div class="rule" data-od-id="board-rule">
+        <div class="rl-t">计分规则</div>
+        <p id="rule-now">—</p>
+        <p class="rl-sub" id="rule-sub">—</p>
+      </div>
+    </aside>
+  </main>
+
+  <footer class="s-foot" data-od-id="board-footer">
+    <span id="foot-left">2026 金融科技创新演讲大赛组委会</span>
+    <span id="foot-right">—</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var KEY='fintech-vote-state-v1';
+  function seedState(){
+    return {
+      competition:'2026 金融科技创新演讲大赛 · 总决赛',stage:'决赛 · 第一轮',
+      scale:100,rule:'trimmed-mean',open:true,revealed:false,rev:1,updatedAt:Date.now(),
+      dimensions:[
+        {id:'d1',name:'金融科技专业度',weight:25},{id:'d2',name:'内容与逻辑深度',weight:25},
+        {id:'d3',name:'表达与感染力',weight:20},{id:'d4',name:'创新与商业价值',weight:20},
+        {id:'d5',name:'时间控制与台风',weight:10}
+      ],
+      projects:[
+        {id:'p1',name:'链上票 · 供应链票据流转平台',team:'深金所 · 票据组',track:'数字金融基础设施'},
+        {id:'p2',name:'智能信贷风控引擎',team:'微众银行 · 风控实验室',track:'普惠信贷'},
+        {id:'p3',name:'跨境支付「一账通」',team:'连连国际 · 清算网络组',track:'跨境支付'},
+        {id:'p4',name:'ESG 数据银行',team:'中碳数科 · 数据银行组',track:'绿色金融'},
+        {id:'p5',name:'声纹盾 · 语音反诈防线',team:'蚂蚁集团 · 安全科技',track:'金融安全'},
+        {id:'p6',name:'数字人民币离线商圈',team:'工行软开 · 数币应用组',track:'数字人民币'}
+      ],
+      judges:[
+        {id:'j1',name:'陈立',org:'中金资本 · 董事总经理',pin:'2041',projectId:'p1'},
+        {id:'j2',name:'苏敏',org:'蚂蚁集团 · 首席架构师',pin:'3087',projectId:'p1'},
+        {id:'j3',name:'王皓',org:'清华五道口金融学院 · 副教授',pin:'4520',projectId:'p1'},
+        {id:'j4',name:'李维',org:'红杉中国 · 投资合伙人',pin:'5833',projectId:'p1'},
+        {id:'j5',name:'周芸',org:'招商银行 · 数字金融部总监',pin:'6190',projectId:'p1'},
+        {id:'j6',name:'郑昊',org:'建信金科 · 首席产品官',pin:'7724',projectId:'p1'}
+      ],scores:{}
+    };
+  }
+  function load(){try{var r=localStorage.getItem(KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
+  function save(s){s.updatedAt=Date.now();s.rev=(s.rev||0)+1;try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}return s;}
+  function ensure(){var s=load();if(!s){s=seedState();save(s);}return s;}
+  function weighted(dims,vals){var t=0,w=0;dims.forEach(function(d){w+=d.weight;var v=vals?vals[d.id]:null;if(typeof v==='number'&&!isNaN(v))t+=v*d.weight;});return w?t/w:0;}
+  function entry(s,pid,jid){var j=s.scores[jid];return j?j[pid]:null;}
+  function projectDone(s,pid){return s.judges.filter(function(j){return !!entry(s,pid,j.id);}).length;}
+  function countScores(s){var n=0;Object.keys(s.scores).forEach(function(j){n+=Object.keys(s.scores[j]).length;});return n;}
+  function agg(s,pid){
+    var list=s.judges.map(function(j){return entry(s,pid,j.id);}).filter(Boolean).map(function(e){return weighted(s.dimensions,e.values);}).sort(function(a,b){return a-b;});
+    var n=list.length;if(!n)return {mean:null,n:0,effective:0,lo:null,hi:null};
+    var use=list;
+    if(s.rule==='trimmed-mean'&&n>=3)use=list.slice(1,-1);
+    else if(s.rule==='drop-high'&&n>=2)use=list.slice(0,-1);
+    return {mean:use.reduce(function(a,b){return a+b;},0)/use.length,n:n,effective:use.length,lo:list[0],hi:list[n-1]};
+  }
+  var ruleText={'trimmed-mean':'去掉最高分与最低分后取平均','drop-high':'去掉一个最高分后取平均','mean':'全部有效评委取平均'};
+  function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+
+  var s=ensure();
+  var $=function(id){return document.getElementById(id);};
+  function setText(id,v){var e=$(id);if(e)e.textContent=v;}
+
+  function render(){
+    setText('comp-name',s.competition);
+    setText('comp-sub',s.stage+' · '+s.projects.length+' 个项目 / '+s.judges.length+' 位评委');
+    setText('foot-left',s.competition.split(' · ')[0]+'组委会');
+    setText('foot-right','数据更新 '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' · 本机实时同步');
+
+    var pill=$('reveal-pill');
+    if(s.revealed){pill.className='pill ok';pill.innerHTML='<span class="dot"></span>结果已揭晓';}
+    else if(s.open){pill.className='pill info live';pill.innerHTML='<span class="dot"></span>评分进行中';}
+    else{pill.className='pill warn';pill.innerHTML='评分通道已关闭';}
+    setText('submit-pill','已收到 '+countScores(s)+' / '+(s.projects.length*s.judges.length)+' 份');
+
+    setText('rule-now',ruleText[s.rule]);
+    setText('rule-sub','有效评委数：'+(s.judges.length>=3&&s.rule==='trimmed-mean'?s.judges.length-2:s.rule==='drop-high'?Math.max(s.judges.length-1,0):s.judges.length)+' 位 · 每个维度加权折算为 0–100 分');
+
+    var cur=s.judges.find(function(j){return j.projectId;});
+    var cp=s.projects.find(function(p){return cur&&p.id===cur.projectId;});
+    var onSame=s.judges.length&&s.judges.every(function(j){return j.projectId===(s.judges[0]&&s.judges[0].projectId);});
+    if(cp){
+      setText('now-name',cp.name);
+      setText('now-sub',(onSame?'全员统一评审 · ':'委员分散评审 · ')+cp.team+' · '+cp.track);
+      var d=projectDone(s,cp.id),pct=s.judges.length?Math.round(d/s.judges.length*100):0;
+      setText('now-count',d+' / '+s.judges.length);
+      $('now-bar').style.width=pct+'%';
+    }else{
+      setText('now-name','等待调度');setText('now-sub','请在后台把评委分配到项目');setText('now-count','0 / '+s.judges.length);$('now-bar').style.width='0%';
+    }
+
+    var grid=$('judge-grid');
+    var targetId=cp?cp.id:null;
+    grid.innerHTML=s.judges.map(function(j){
+      var done=targetId&&entry(s,targetId,j.id);
+      return '<div class="jg'+(done?' done':'')+'"><span class="jd"></span><span><span class="jn">'+esc(j.name)+'</span><span class="js" style="display:block">'+(done?'已提交':'待评分')+'</span></span></div>';
+    }).join('');
+
+    renderBoard();
+  }
+
+  function renderBoard(){
+    var list=$('rank-list');
+    var scored=s.projects.map(function(p){return {p:p,a:agg(s,p.id)};});
+    if(s.revealed){
+      scored.sort(function(x,y){if(x.a.mean==null&&y.a.mean==null)return 0;if(x.a.mean==null)return 1;if(y.a.mean==null)return -1;return y.a.mean-x.a.mean;});
+      var max=scored.reduce(function(m,x){return Math.max(m,x.a.mean||0);},0)||100;
+      setText('board-title','最终排名');
+      setText('board-note','按「'+ruleText[s.rule]+'」计算 · 满分 100');
+      list.innerHTML=scored.map(function(x,i){
+        var m=x.a.mean;
+        var lead=(i===0&&m!=null);
+        var pct=m==null?0:Math.max(0,Math.min(100,m/max*100));
+        return '<div class="rk'+(lead?' lead':'')+'">'+
+          '<div class="rank">'+String(i+1).padStart(2,'0')+'</div>'+
+          '<div><div class="rk-name">'+esc(x.p.name)+'</div>'+
+            '<div class="rk-sub">'+esc(x.p.team)+' · '+esc(x.p.track)+'</div>'+
+            '<div class="rk-bar"><i style="width:'+pct.toFixed(1)+'%"></i></div></div>'+
+          '<div class="rk-score">'+(m==null?'—':m.toFixed(2))+(m==null?'':'<small>分</small>')+
+            '<span class="rk-eff">'+(x.a.effective?x.a.effective+' 份有效分':'尚无有效分')+'</span></div>'+
+        '</div>';
+      }).join('');
+    }else{
+      setText('board-title','评分进行中 · 结果待揭晓');
+      setText('board-note','各项目按出场顺序排列 · 分数将在揭晓后公布');
+      list.innerHTML=scored.map(function(x,i){
+        var done=projectDone(s,x.p.id);
+        var pct=s.judges.length?Math.round(done/s.judges.length*100):0;
+        return '<div class="rk rk-masked">'+
+          '<div class="rank">'+String(i+1).padStart(2,'0')+'</div>'+
+          '<div><div class="rk-name">'+esc(x.p.name)+'</div>'+
+            '<div class="rk-sub">'+esc(x.p.team)+' · '+esc(x.p.track)+'</div>'+
+            '<div class="rk-bar"><i style="width:'+pct+'%"></i></div></div>'+
+          '<div class="rk-score"><span class="mask-tag">待揭晓</span>'+
+            '<span class="rk-eff">'+done+' / '+s.judges.length+' 位评委已评</span></div>'+
+        '</div>';
+      }).join('');
+    }
+  }
+
+  /* clock */
+  function tick(){var d=new Date();setText('clock',String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'));}
+  tick();setInterval(tick,10000);
+
+  $('btn-fs').addEventListener('click',function(){
+    try{ if(!document.fullscreenElement){document.documentElement.requestFullscreen();} else {document.exitFullscreen();} }catch(e){}
+  });
+
+  /* live sync */
+  function poll(){var f=load();if(f){s=f;render();}}
+  window.addEventListener('storage',function(e){if(e.key===KEY)poll();});
+  setInterval(poll,1300);
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+# ==========================================================================
+# 行尾规范化：本项目在 Windows 开发，但可能被 Linux/macOS 克隆或在 CI 中构建，
+# 统一由 Git 按文本类型自动处理，避免出现满屏 "CRLF will be replaced" 警告与
+# 无意义的整文件 diff。
+# ==========================================================================
+
+# 默认：由 Git 自动判定文本文件并在仓库内统一存为 LF
+* text=auto
+
+# ---- 明确指定为文本 ----
+*.java   text
+*.xml    text
+*.yml    text
+*.yaml   text
+*.properties text
+*.sql    text
+*.js     text
+*.jsx    text
+*.json   text
+*.css    text
+*.html   text
+*.md     text
+
+# ---- Windows 脚本必须保持 CRLF ----
+# 批处理解释器对仅有 LF 的行尾在 goto/label 场景下可能出错，强制检出为 CRLF
+*.cmd    text eol=crlf
+*.bat    text eol=crlf
+
+# ---- PowerShell / Shell 脚本 ----
+# 保留 LF：部分 PowerShell 脚本带 UTF-8 BOM，保持行尾不变最稳妥
+*.ps1    text eol=lf
+*.sh     text eol=lf
+
+# Dockerfile 与忽略规则文件按文本处理
+Dockerfile text
+.dockerignore text
+.gitignore text
+.gitattributes text
+
+# ---- 二进制文件，禁止任何行尾转换 ----
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.ico    binary
+*.svg    text
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.eot    binary
+*.pdf    binary
+*.jar    binary
+*.zip    binary
+*.exe    binary
+*.db     binary

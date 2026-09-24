@@ -1,0 +1,738 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>后台配置台 · FinVote 评赛系统</title>
+<style>
+  :root{
+    --bg:      oklch(97.6% 0.010 258);
+    --surface: oklch(100% 0 0);
+    --fg:      oklch(24.4% 0.061 262);
+    --muted:   oklch(53.5% 0.057 260);
+    --border:  oklch(90.5% 0.026 258);
+    --accent:  oklch(54.6% 0.215 263);
+    --accent-strong:       oklch(48.5% 0.198 262.5);
+    --accent-strong-hover: oklch(43% 0.178 262);
+
+    --ok-ink:     oklch(45.5% 0.125 158);
+    --warn-ink:   oklch(50% 0.115 72);
+    --danger-ink: oklch(50% 0.185 28);
+    --info-ink:   oklch(48% 0.17 258);
+
+    --accent-soft: color-mix(in oklch, var(--accent) 14%, transparent);
+    --fg-soft:     color-mix(in oklch, var(--fg) 6%, transparent);
+    --fg-softer:   color-mix(in oklch, var(--fg) 3.5%, transparent);
+    --ok-soft:     color-mix(in oklch, var(--ok-ink) 14%, transparent);
+    --warn-soft:   color-mix(in oklch, var(--warn-ink) 15%, transparent);
+    --danger-soft: color-mix(in oklch, var(--danger-ink) 13%, transparent);
+    --info-soft:   color-mix(in oklch, var(--info-ink) 13%, transparent);
+
+    --font-display: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-body:    -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+    --gap-xs:8px; --gap-sm:12px; --gap-md:20px; --gap-lg:28px; --gap-xl:40px;
+    --radius:9px; --radius-lg:13px;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  img,svg{display:block;max-width:100%}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer}
+  p{margin:0;text-wrap:pretty}
+  h1,h2,h3{margin:0;text-wrap:balance}
+  .mono,.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  .meta{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.6}
+
+  h2{font-family:var(--font-display);font-size:22px;font-weight:650;letter-spacing:-0.02em;line-height:1.15}
+  h3{font-family:var(--font-display);font-size:15px;font-weight:620;letter-spacing:-0.01em}
+  .lead{font-size:14.5px;line-height:1.6;color:var(--muted);max-width:64ch}
+
+  .app{display:grid;grid-template-columns:236px 1fr;min-height:100vh}
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow:auto}
+  .sb-brand{display:flex;align-items:center;gap:9px;padding:4px 8px 14px}
+  .sb-brand .mark{width:24px;height:24px;border:1px solid var(--fg);border-radius:6px;display:grid;place-items:center;font-family:var(--font-mono);font-size:12px;font-weight:700}
+  .sb-brand .name{font-family:var(--font-display);font-size:15px;font-weight:650}
+  .sb-comp{border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px;margin-bottom:14px}
+  .sb-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted)}
+  .sb-name{font-size:13.5px;font-weight:600;line-height:1.4;margin-top:4px}
+  .snav{display:flex;flex-direction:column;gap:2px}
+  .snav button{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;border:0;background:transparent;border-radius:8px;color:var(--muted);font-size:13.5px;text-align:left;width:100%;transition:background .12s ease,color .12s ease}
+  .snav button:hover{background:var(--fg-soft);color:var(--fg)}
+  .snav button.active{background:var(--fg-soft);color:var(--fg);font-weight:600}
+  .snav button .cnt{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+  .sb-foot{margin-top:auto;padding-top:16px;display:flex;flex-direction:column;gap:8px}
+  @media (max-width:920px){
+    .app{grid-template-columns:1fr}
+    .sidebar{position:static;height:auto;border-right:0;border-bottom:1px solid var(--border)}
+    .snav{flex-direction:row;flex-wrap:wrap}
+    .snav button{width:auto}
+    .sb-foot{margin-top:12px}
+  }
+
+  .main{min-width:0;display:flex;flex-direction:column}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 28px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:10;background:color-mix(in oklch,var(--bg) 88%,transparent);backdrop-filter:blur(10px)}
+  .tb-title{font-family:var(--font-display);font-size:16px;font-weight:640}
+  .tb-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  @media (max-width:920px){.topbar{padding:12px 18px;position:static}}
+
+  .tabpane{display:none;padding:26px 28px 56px}
+  .tabpane.active{display:block}
+  @media (max-width:920px){.tabpane{padding:20px 18px 44px}}
+  .pane-head{margin-bottom:22px}
+  .pane-head h2{margin-bottom:6px}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 16px;border-radius:var(--radius);border:1px solid transparent;font-size:13.5px;font-weight:520;transition:background .15s ease,border-color .15s ease,color .15s ease,transform .05s ease}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--accent-strong);color:var(--surface);border-color:var(--accent-strong)}
+  .btn-primary:hover{background:var(--accent-strong-hover)}
+  .btn-secondary{background:var(--surface);color:var(--fg);border-color:var(--border)}
+  .btn-secondary:hover{border-color:var(--fg)}
+  .btn-ghost{background:transparent;color:var(--muted);border-color:transparent;padding-inline:8px}
+  .btn-ghost:hover{color:var(--fg)}
+  .btn-danger{background:transparent;color:var(--danger-ink);border-color:color-mix(in oklch,var(--danger-ink) 32%,transparent)}
+  .btn-danger:hover{background:var(--danger-soft)}
+  .btn-sm{padding:6px 11px;font-size:12.5px}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+  .panel + .panel{margin-top:var(--gap-md)}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)}
+  .panel-head .t{font-family:var(--font-display);font-size:14.5px;font-weight:630}
+  .panel-body{padding:18px}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--gap-md)}
+  @media (max-width:880px){.grid-2{grid-template-columns:1fr}}
+  .stack{display:flex;flex-direction:column;gap:16px}
+  .row{display:flex;align-items:center;gap:12px}
+  .row-wrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field > label{font-size:12.5px;color:var(--muted)}
+  .input,.select{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--fg);font:inherit;font-size:13.5px}
+  .select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 15px) 50%,calc(100% - 10px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:30px}
+  .input:focus,.select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .input.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+
+  .opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media (max-width:680px){.opt-grid{grid-template-columns:1fr}}
+  .opt{position:relative;border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;background:var(--surface);text-align:left;cursor:pointer;transition:border-color .12s ease,background .12s ease}
+  .opt:hover{border-color:color-mix(in oklch,var(--fg) 30%,var(--border))}
+  .opt .opt-t{font-size:13.5px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .opt .opt-d{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5}
+  .opt .tick{font-family:var(--font-mono);font-size:13px;color:var(--muted)}
+  .opt.on{border-color:var(--fg);background:var(--fg-softer)}
+  .opt.on .tick{color:var(--fg)}
+
+  .sum-badge{font-family:var(--font-mono);font-size:12px;padding:3px 10px;border-radius:999px;background:var(--fg-soft);color:var(--fg);font-weight:600}
+  .sum-badge.bad{background:var(--danger-soft);color:var(--danger-ink)}
+
+  .dim-row{display:grid;grid-template-columns:1fr 120px 96px 40px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+  .dim-row:last-of-type{border-bottom:0}
+  .dim-row .w-unit{font-family:var(--font-mono);font-size:12.5px;color:var(--muted);text-align:right}
+  @media (max-width:680px){.dim-row{grid-template-columns:1fr 90px 40px}.dim-row .w-unit{display:none}}
+  .dim-head{display:grid;grid-template-columns:1fr 120px 96px 40px;gap:10px;padding:0 0 8px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+  @media (max-width:680px){.dim-head{grid-template-columns:1fr 90px 40px}.dim-head span:nth-child(3){display:none}}
+
+  .tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+  .tbl th,.tbl td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);vertical-align:middle}
+  .tbl th{font-family:var(--font-mono);font-size:10.5px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--fg-softer)}
+  .tbl tbody tr:hover{background:var(--fg-softer)}
+  .tbl td .input{padding:6px 9px;font-size:13px}
+  .tbl .num{font-variant-numeric:tabular-nums}
+  .tbl .c-idx{width:38px;color:var(--muted);font-family:var(--font-mono)}
+  .tbl .c-act{width:70px;text-align:right}
+
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:2.5px 9px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.02em;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-ink)}
+  .pill.info{background:var(--info-soft);color:var(--info-ink)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn-ink)}
+  .pill.idle{background:var(--fg-soft);color:var(--muted)}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:0 0 auto}
+  .pill.live .dot{animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  .switch{position:relative;display:inline-flex;align-items:center;gap:11px;cursor:pointer;user-select:none}
+  .switch input{position:absolute;opacity:0;width:0;height:0}
+  .switch .track{width:42px;height:23px;border-radius:999px;background:color-mix(in oklch,var(--fg) 20%,var(--surface));position:relative;transition:background .16s ease;flex:0 0 auto}
+  .switch .track::after{content:'';position:absolute;top:2.5px;left:2.5px;width:18px;height:18px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px color-mix(in oklch,var(--fg) 35%,transparent);transition:transform .16s ease}
+  .switch input:checked + .track{background:var(--accent)}
+  .switch input:checked + .track::after{transform:translateX(19px)}
+  .switch input:focus-visible + .track{outline:2px solid var(--accent-soft);outline-offset:2px}
+  .switch .switch-t{font-size:13.5px}
+
+  .prog{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+  .prog:last-child{border-bottom:0}
+  .prog .pname{width:190px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prog .ptrack{flex:1;height:6px;border-radius:999px;background:var(--fg-soft);overflow:hidden}
+  .prog .ptrack i{display:block;height:100%;background:var(--fg);border-radius:999px;transition:width .2s ease}
+  .prog .pval{width:52px;text-align:right;font-family:var(--font-mono);font-size:12.5px;color:var(--muted)}
+  @media (max-width:680px){.prog .pname{width:110px}}
+
+  .danger-zone{border:1px solid color-mix(in oklch,var(--danger-ink) 26%,var(--border));border-radius:var(--radius-lg);padding:16px 18px;background:var(--danger-soft)}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);background:var(--fg);color:var(--surface);padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:50}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  :focus-visible{outline:2px solid color-mix(in oklch,var(--accent) 55%,transparent);outline-offset:2px;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" data-od-id="admin-sidebar">
+    <div class="sb-brand">
+      <span class="mark" aria-hidden="true">FV</span>
+      <span class="name">FinVote 后台</span>
+    </div>
+    <div class="sb-comp">
+      <div class="sb-label">当前赛事</div>
+      <div class="sb-name" id="sb-name">—</div>
+      <div class="meta" id="sb-stage" style="margin-top:4px">—</div>
+    </div>
+    <nav class="snav" id="snav" aria-label="后台模块">
+      <button type="button" data-tab="setup" class="active">赛制配置<span class="cnt" id="nav-setup">—</span></button>
+      <button type="button" data-tab="roster">项目与评委<span class="cnt" id="nav-roster">—</span></button>
+      <button type="button" data-tab="dispatch">实时调度<span class="cnt" id="nav-dispatch">—</span></button>
+      <button type="button" data-tab="stage">揭晓与导出<span class="cnt" id="nav-stage">—</span></button>
+    </nav>
+    <div class="sb-foot">
+      <a class="btn btn-ghost btn-sm" href="index.html">返回总览</a>
+      <a class="btn btn-ghost btn-sm" href="scoreboard.html">打开总分大屏</a>
+      <div class="meta" style="padding-left:8px">原型 v0.1 · 本机数据</div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar" data-od-id="admin-topbar">
+      <div>
+        <div class="tb-title">后台配置台</div>
+        <div class="meta" id="tb-sub">—</div>
+      </div>
+      <div class="tb-right">
+        <span class="meta" id="tb-saved">已自动保存</span>
+        <button type="button" class="btn btn-primary" id="btn-open" data-od-id="toggle-open">关闭评分</button>
+      </div>
+    </header>
+
+    <!-- 赛制配置 -->
+    <section class="tabpane active" id="pane-setup" data-od-id="pane-setup">
+      <div class="pane-head">
+        <h2>赛制配置</h2>
+        <p class="lead">确认赛事信息、评分制式、计分规则，以及各评分维度的权重。权重合计需为 100%。</p>
+      </div>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><span class="t">赛事基本信息</span></div>
+          <div class="panel-body stack">
+            <div class="field"><label for="inp-comp">赛事名称</label><input class="input" id="inp-comp" /></div>
+            <div class="field"><label for="inp-stage">当前环节</label><input class="input" id="inp-stage" /></div>
+            <div class="field">
+              <label>参赛规模（后台设定）</label>
+              <div class="row">
+                <input class="input num" id="inp-np" type="number" min="1" max="24" style="width:88px" aria-label="参赛项目数" />
+                <span class="hint">个项目</span>
+                <input class="input num" id="inp-nj" type="number" min="1" max="24" style="width:88px" aria-label="评委人数" />
+                <span class="hint">位评委</span>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-scale" style="margin-left:auto">应用规模</button>
+              </div>
+              <p class="hint">增减数量会同步增删名单中的占位条目（示例原型）。</p>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span class="t">评分制式</span><span class="pill idle">赛前已确认</span></div>
+          <div class="panel-body">
+            <div class="opt-grid" id="opt-scale"></div>
+            <p class="hint" style="margin-top:12px">本届总决赛采用「百分制 · 多维度加权」，维度得分按权重折算为 0–100 的最终得分。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="t">计分规则</span><span class="meta" id="rule-summary">—</span></div>
+        <div class="panel-body">
+          <div class="opt-grid" id="opt-rule"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><span class="t">评分维度与权重</span><span class="sum-badge" id="sum-badge">合计 100%</span></div>
+        <div class="panel-body">
+          <div class="dim-head"><span>维度名称</span><span>权重（%）</span><span style="text-align:right">折算说明</span><span></span></div>
+          <div id="dim-rows"></div>
+          <div class="row" style="margin-top:14px;justify-content:space-between">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-add-dim">添加维度</button>
+            <span class="hint">新增维度后请把权重重新配平至 100%。</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 项目与评委 -->
+    <section class="tabpane" id="pane-roster" data-od-id="pane-roster">
+      <div class="pane-head">
+        <h2>项目与评委</h2>
+        <p class="lead">维护参赛项目名单与评委名单。点击单元格即可直接编辑，修改会自动保存。</p>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="t">参赛项目</span><button type="button" class="btn btn-secondary btn-sm" id="btn-add-proj">添加项目</button></div>
+        <div class="panel-body" style="padding:0">
+          <table class="tbl" id="tbl-proj">
+            <thead><tr><th class="c-idx">#</th><th>项目名称</th><th>团队</th><th>赛道</th><th>评分进度</th><th class="c-act"></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="t">评委名单</span><button type="button" class="btn btn-secondary btn-sm" id="btn-add-judge">添加评委</button></div>
+        <div class="panel-body" style="padding:0">
+          <table class="tbl" id="tbl-judge">
+            <thead><tr><th class="c-idx">#</th><th>姓名</th><th>机构 / 职务</th><th>登入 PIN</th><th>当前评审</th><th class="c-act"></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 实时调度 -->
+    <section class="tabpane" id="pane-dispatch" data-od-id="pane-dispatch">
+      <div class="pane-head">
+        <h2>实时调度</h2>
+        <p class="lead">主持人在这里控制每位评委当前正在评的项目。切换后评委端与大屏会自动同步，评委无需刷新即可看到新项目。</p>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="t">批量切换到项目</span><span class="pill info live"><span class="dot"></span>实时同步</span></div>
+        <div class="panel-body">
+          <div class="row-wrap">
+            <select class="select" id="bulk-proj" style="width:280px"></select>
+            <button type="button" class="btn btn-secondary" id="btn-bulk">全员切换到该项目</button>
+            <button type="button" class="btn btn-secondary" id="btn-next">切到下一项</button>
+          </div>
+          <p class="hint" style="margin-top:10px" id="dispatch-note">—</p>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="t">评委调度台</span><span class="meta" id="dispatch-count">—</span></div>
+        <div class="panel-body" style="padding:0">
+          <table class="tbl" id="tbl-dispatch">
+            <thead><tr><th class="c-idx">#</th><th>评委</th><th>机构 / 职务</th><th>当前评审项目</th><th>该项目提交状态</th><th class="c-act"></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-head"><span class="t">各项目完成度</span><span class="meta">已提交评委 / 总评委</span></div>
+          <div class="panel-body" id="prog-list"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span class="t">调度说明</span></div>
+          <div class="panel-body stack">
+            <p class="hint">1. 演讲进行时，把全员切到当前演讲项目，评委端标题会立即变为该项目。</p>
+            <p class="hint">2. 若个别评委需要补评上一项目，可单独修改其「当前评审项目」下拉框。</p>
+            <p class="hint">3. 已提交的评分不会因切换而丢失，可按项目分别汇总。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 揭晓与导出 -->
+    <section class="tabpane" id="pane-stage" data-od-id="pane-stage">
+      <div class="pane-head">
+        <h2>揭晓与导出</h2>
+        <p class="lead">控制评分通道与结果揭晓时机，并把评分明细导出为 CSV 存档。</p>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="t">现场开关</span></div>
+        <div class="panel-body stack">
+          <label class="switch">
+            <input type="checkbox" id="sw-open" />
+            <span class="track" aria-hidden="true"></span>
+            <span class="switch-t"><strong>评分通道</strong> — 关闭后评委端将暂停提交</span>
+          </label>
+          <label class="switch">
+            <input type="checkbox" id="sw-reveal" />
+            <span class="track" aria-hidden="true"></span>
+            <span class="switch-t"><strong>大屏揭晓</strong> — 开启后总分大屏显示具体分数与排名</span>
+          </label>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="t">数据导出</span><span class="meta" id="export-summary">—</span></div>
+        <div class="panel-body row-wrap">
+          <button type="button" class="btn btn-secondary" id="btn-csv-scores">导出评分明细 CSV</button>
+          <button type="button" class="btn btn-secondary" id="btn-csv-rank">导出项目排名 CSV</button>
+          <a class="btn btn-ghost" href="scoreboard.html">前往总分大屏 →</a>
+        </div>
+      </div>
+      <div class="danger-zone">
+        <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <h3>重置演示数据</h3>
+            <p class="hint" style="margin-top:4px">清空所有名单与评分，恢复到 6 个项目、6 位评委的初始示例数据。</p>
+          </div>
+          <button type="button" class="btn btn-danger" id="btn-reset2">重置为示例数据</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var KEY='fintech-vote-state-v1';
+  function uid(p){return (p||'id')+'_'+Math.random().toString(36).slice(2,8);}
+  function seedState(){
+    return {
+      competition:'2026 金融科技创新演讲大赛 · 总决赛',
+      stage:'决赛 · 第一轮',
+      scale:100, rule:'trimmed-mean', open:true, revealed:false, rev:1, updatedAt:Date.now(),
+      dimensions:[
+        {id:'d1',name:'金融科技专业度',weight:25},
+        {id:'d2',name:'内容与逻辑深度',weight:25},
+        {id:'d3',name:'表达与感染力',weight:20},
+        {id:'d4',name:'创新与商业价值',weight:20},
+        {id:'d5',name:'时间控制与台风',weight:10}
+      ],
+      projects:[
+        {id:'p1',name:'链上票 · 供应链票据流转平台',team:'深金所 · 票据组',track:'数字金融基础设施'},
+        {id:'p2',name:'智能信贷风控引擎',team:'微众银行 · 风控实验室',track:'普惠信贷'},
+        {id:'p3',name:'跨境支付「一账通」',team:'连连国际 · 清算网络组',track:'跨境支付'},
+        {id:'p4',name:'ESG 数据银行',team:'中碳数科 · 数据银行组',track:'绿色金融'},
+        {id:'p5',name:'声纹盾 · 语音反诈防线',team:'蚂蚁集团 · 安全科技',track:'金融安全'},
+        {id:'p6',name:'数字人民币离线商圈',team:'工行软开 · 数币应用组',track:'数字人民币'}
+      ],
+      judges:[
+        {id:'j1',name:'陈立',org:'中金资本 · 董事总经理',pin:'2041',projectId:'p1'},
+        {id:'j2',name:'苏敏',org:'蚂蚁集团 · 首席架构师',pin:'3087',projectId:'p1'},
+        {id:'j3',name:'王皓',org:'清华五道口金融学院 · 副教授',pin:'4520',projectId:'p1'},
+        {id:'j4',name:'李维',org:'红杉中国 · 投资合伙人',pin:'5833',projectId:'p1'},
+        {id:'j5',name:'周芸',org:'招商银行 · 数字金融部总监',pin:'6190',projectId:'p1'},
+        {id:'j6',name:'郑昊',org:'建信金科 · 首席产品官',pin:'7724',projectId:'p1'}
+      ],
+      scores:{}
+    };
+  }
+  function load(){try{var r=localStorage.getItem(KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
+  function save(s){s.updatedAt=Date.now();s.rev=(s.rev||0)+1;try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}return s;}
+  function ensure(){var s=load();if(!s){s=seedState();save(s);}return s;}
+  function entry(s,pid,jid){var j=s.scores[jid];return j?j[pid]:null;}
+  function countScores(s){var n=0;Object.keys(s.scores).forEach(function(j){n+=Object.keys(s.scores[j]).length;});return n;}
+  function projectDone(s,pid){return s.judges.filter(function(j){return !!entry(s,pid,j.id);}).length;}
+  function effectiveN(s){var n=s.judges.length;if(s.rule==='trimmed-mean'&&n>=3)return n-2;if(s.rule==='drop-high'&&n>=2)return n-1;return n;}
+  var ruleText={'trimmed-mean':'去掉最高分与最低分后取平均','drop-high':'去掉一个最高分后取平均','mean':'全部有效评委取平均'};
+
+  var s=ensure();
+  var toastEl=document.getElementById('toast'), toastTimer=null;
+  function toast(msg){toastEl.textContent=msg;toastEl.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){toastEl.classList.remove('show');},1800);}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function persist(){save(s);}
+  function dimSum(){return s.dimensions.reduce(function(a,d){return a+(Number(d.weight)||0);},0);}
+
+  /* ── tabs ─────────────────────────────────────────── */
+  var nav=document.getElementById('snav');
+  nav.addEventListener('click',function(e){
+    var b=e.target.closest('button[data-tab]'); if(!b)return;
+    var tab=b.getAttribute('data-tab');
+    Array.prototype.forEach.call(nav.querySelectorAll('button'),function(x){x.classList.toggle('active',x===b);});
+    ['setup','roster','dispatch','stage'].forEach(function(t){
+      document.getElementById('pane-'+t).classList.toggle('active',t===tab);
+    });
+  });
+
+  /* ── scale options (locked) ───────────────────────── */
+  var SCALE_OPTS=[
+    {id:'weighted-100',t:'百分制 · 多维度加权',d:'每个维度 0–100 分，按权重折算为最终得分',on:true},
+    {id:'weighted-10',t:'十分制 · 多维度加权',d:'每维度 0–10 分，再折算百分制',on:false},
+    {id:'rank',t:'排名制',d:'评委对项目排序，按名次计分',on:false}
+  ];
+  function renderScaleOpts(){
+    var box=document.getElementById('opt-scale');
+    box.innerHTML=SCALE_OPTS.map(function(o){
+      return '<button type="button" class="opt'+(o.on?' on':'')+'" data-scale="'+o.id+'">'+
+        '<span class="opt-t">'+esc(o.t)+'<span class="tick">'+(o.on?'\u2713':'')+'</span></span>'+
+        '<span class="opt-d">'+esc(o.d)+'</span></button>';
+    }).join('');
+    box.querySelectorAll('.opt').forEach(function(b){
+      b.addEventListener('click',function(){
+        if(b.getAttribute('data-scale')!=='weighted-100'){toast('原型已锁定为百分制 · 多维度加权');return;}
+        toast('当前制式：百分制 · 多维度加权');
+      });
+    });
+  }
+
+  /* ── rule options ─────────────────────────────────── */
+  var RULE_OPTS=[
+    {id:'trimmed-mean',t:'去掉最高分与最低分',d:'评委数 ≥ 3 时，去掉一个最高分与一个最低分后取平均'},
+    {id:'drop-high',t:'去掉一个最高分',d:'去掉单个最高分后取平均，保留其余评委'},
+    {id:'mean',t:'全部评委取平均',d:'不做极值处理，直接对全部有效评分取平均'}
+  ];
+  function renderRuleOpts(){
+    var box=document.getElementById('opt-rule');
+    box.innerHTML=RULE_OPTS.map(function(o){
+      return '<button type="button" class="opt'+(s.rule===o.id?' on':'')+'" data-rule="'+o.id+'">'+
+        '<span class="opt-t">'+esc(o.t)+'<span class="tick">'+(s.rule===o.id?'\u2713':'')+'</span></span>'+
+        '<span class="opt-d">'+esc(o.d)+'</span></button>';
+    }).join('');
+    box.querySelectorAll('.opt').forEach(function(b){
+      b.addEventListener('click',function(){
+        s.rule=b.getAttribute('data-rule');persist();renderRuleOpts();renderDimRows();refreshChrome();
+      });
+    });
+  }
+
+  /* ── dimension rows ───────────────────────────────── */
+  function renderDimRows(){
+    var box=document.getElementById('dim-rows');
+    box.innerHTML=s.dimensions.map(function(d,i){
+      return '<div class="dim-row" data-dim="'+d.id+'">'+
+        '<input class="input" data-k="name" value="'+esc(d.name)+'" aria-label="维度名称" />'+
+        '<input class="input num" data-k="weight" type="number" min="0" max="100" value="'+d.weight+'" aria-label="权重" />'+
+        '<span class="w-unit">'+(Number(d.weight)||0)*100/100+'% × 0–100</span>'+
+        '<button type="button" class="btn btn-ghost btn-sm" data-del="1" aria-label="删除维度">✕</button>'+
+      '</div>';
+    }).join('');
+    box.querySelectorAll('.dim-row').forEach(function(row){
+      var id=row.getAttribute('data-dim');
+      var dim=s.dimensions.find(function(x){return x.id===id;});
+      row.querySelector('[data-k="name"]').addEventListener('change',function(e){dim.name=e.target.value;persist();});
+      row.querySelector('[data-k="weight"]').addEventListener('input',function(e){
+        dim.weight=Math.max(0,Math.min(100,Number(e.target.value)||0));
+        row.querySelector('.w-unit').textContent=dim.weight+'% × 0–100';
+        updateSum();persist();
+      });
+      row.querySelector('[data-del]').addEventListener('click',function(){
+        if(s.dimensions.length<=1){toast('至少保留一个评分维度');return;}
+        s.dimensions=s.dimensions.filter(function(x){return x.id!==id;});
+        Object.keys(s.scores).forEach(function(j){Object.keys(s.scores[j]).forEach(function(p){delete s.scores[j][p].values[id];});});
+        persist();renderDimRows();refreshChrome();
+      });
+    });
+    updateSum();
+  }
+  function updateSum(){
+    var sum=dimSum(), badge=document.getElementById('sum-badge');
+    badge.textContent='合计 '+sum+'%';
+    badge.classList.toggle('bad',sum!==100);
+  }
+  document.getElementById('btn-add-dim').addEventListener('click',function(){
+    s.dimensions.push({id:uid('d'),name:'新维度',weight:0});
+    persist();renderDimRows();
+  });
+
+  /* ── basic info ───────────────────────────────────── */
+  var inpComp=document.getElementById('inp-comp'), inpStage=document.getElementById('inp-stage'),
+      inpNp=document.getElementById('inp-np'), inpNj=document.getElementById('inp-nj');
+  inpComp.addEventListener('change',function(){s.competition=inpComp.value.trim()||'未命名赛事';persist();refreshChrome();});
+  inpStage.addEventListener('change',function(){s.stage=inpStage.value.trim()||'—';persist();refreshChrome();});
+  document.getElementById('btn-scale').addEventListener('click',function(){
+    var np=Math.max(1,Math.min(24,Number(inpNp.value)||s.projects.length));
+    var nj=Math.max(1,Math.min(24,Number(inpNj.value)||s.judges.length));
+    setScale(np,nj);persist();renderAll();toast('已设定：'+np+' 个项目 / '+nj+' 位评委');
+  });
+  function setScale(np,nj){
+    while(s.projects.length<np){var k=s.projects.length+1;s.projects.push({id:uid('p'),name:'待命名项目 '+k,team:'待填写团队',track:'待定赛道'});}
+    while(s.projects.length>np){var rm=s.projects.pop();Object.keys(s.scores).forEach(function(j){delete s.scores[j][rm.id];});}
+    while(s.judges.length<nj){var m=s.judges.length+1;s.judges.push({id:uid('j'),name:'评委 '+m,org:'待填写机构',pin:String(1000+m*7),projectId:s.projects[0]?s.projects[0].id:null});}
+    while(s.judges.length>nj){var rj=s.judges.pop();delete s.scores[rj.id];}
+    s.judges.forEach(function(j){if(!s.projects.some(function(p){return p.id===j.projectId;}))j.projectId=s.projects[0]?s.projects[0].id:null;});
+  }
+
+  /* ── roster tables ────────────────────────────────── */
+  function renderRoster(){
+    var pb=document.querySelector('#tbl-proj tbody');
+    pb.innerHTML=s.projects.map(function(p,i){
+      var done=projectDone(s,p.id);
+      return '<tr data-pid="'+p.id+'"><td class="c-idx">'+String(i+1).padStart(2,'0')+'</td>'+
+        '<td><input class="input" data-k="name" value="'+esc(p.name)+'" /></td>'+
+        '<td><input class="input" data-k="team" value="'+esc(p.team)+'" /></td>'+
+        '<td><input class="input" data-k="track" value="'+esc(p.track)+'" /></td>'+
+        '<td><span class="pill '+(done?'ok':'idle')+'">'+done+' / '+s.judges.length+' 已评</span></td>'+
+        '<td class="c-act"><button type="button" class="btn btn-ghost btn-sm" data-del="1">删除</button></td></tr>';
+    }).join('');
+    pb.querySelectorAll('tr').forEach(function(tr){
+      var pid=tr.getAttribute('data-pid'); var p=s.projects.find(function(x){return x.id===pid;});
+      tr.querySelectorAll('input[data-k]').forEach(function(inp){
+        inp.addEventListener('change',function(){p[inp.getAttribute('data-k')]=inp.value;persist();renderRoster();refreshChrome();});
+      });
+      tr.querySelector('[data-del]').addEventListener('click',function(){
+        s.projects=s.projects.filter(function(x){return x.id!==pid;});
+        Object.keys(s.scores).forEach(function(j){delete s.scores[j][pid];});
+        s.judges.forEach(function(j){if(j.projectId===pid)j.projectId=s.projects[0]?s.projects[0].id:null;});
+        persist();renderAll();toast('已删除项目');
+      });
+    });
+
+    var jb=document.querySelector('#tbl-judge tbody');
+    jb.innerHTML=s.judges.map(function(j,i){
+      var p=s.projects.find(function(x){return x.id===j.projectId;});
+      return '<tr data-jid="'+j.id+'"><td class="c-idx">'+String(i+1).padStart(2,'0')+'</td>'+
+        '<td><input class="input" data-k="name" value="'+esc(j.name)+'" /></td>'+
+        '<td><input class="input" data-k="org" value="'+esc(j.org)+'" /></td>'+
+        '<td><input class="input num" data-k="pin" value="'+esc(j.pin)+'" style="width:76px" /></td>'+
+        '<td class="meta" style="white-space:nowrap">'+esc(p?p.name:'未分配')+'</td>'+
+        '<td class="c-act"><button type="button" class="btn btn-ghost btn-sm" data-del="1">删除</button></td></tr>';
+    }).join('');
+    jb.querySelectorAll('tr').forEach(function(tr){
+      var jid=tr.getAttribute('data-jid'); var j=s.judges.find(function(x){return x.id===jid;});
+      tr.querySelectorAll('input[data-k]').forEach(function(inp){
+        inp.addEventListener('change',function(){j[inp.getAttribute('data-k')]=inp.value;persist();renderRoster();refreshChrome();});
+      });
+      tr.querySelector('[data-del]').addEventListener('click',function(){
+        s.judges=s.judges.filter(function(x){return x.id!==jid;});delete s.scores[jid];
+        persist();renderAll();toast('已删除评委');
+      });
+    });
+    document.getElementById('btn-add-proj').onclick=function(){
+      s.projects.push({id:uid('p'),name:'新项目 '+(s.projects.length+1),team:'待填写团队',track:'待定赛道'});
+      persist();renderAll();
+    };
+    document.getElementById('btn-add-judge').onclick=function(){
+      s.judges.push({id:uid('j'),name:'评委 '+(s.judges.length+1),org:'待填写机构',pin:String(1000+(s.judges.length+1)*7),projectId:s.projects[0]?s.projects[0].id:null});
+      persist();renderAll();
+    };
+  }
+
+  /* ── dispatch ─────────────────────────────────────── */
+  function renderDispatch(){
+    var sel=document.getElementById('bulk-proj');
+    sel.innerHTML=s.projects.map(function(p){return '<option value="'+p.id+'">'+esc(p.name)+'</option>';}).join('');
+    var tb=document.querySelector('#tbl-dispatch tbody');
+    tb.innerHTML=s.judges.map(function(j,i){
+      var done=entry(s,j.projectId,j.id);
+      var opts=s.projects.map(function(p){return '<option value="'+p.id+'" '+(p.id===j.projectId?'selected':'')+'>'+esc(p.name)+'</option>';}).join('');
+      return '<tr data-jid="'+j.id+'"><td class="c-idx">'+String(i+1).padStart(2,'0')+'</td>'+
+        '<td style="font-weight:600;white-space:nowrap">'+esc(j.name)+'</td>'+
+        '<td class="meta" style="white-space:nowrap">'+esc(j.org)+'</td>'+
+        '<td><select class="select" data-sel="1" style="min-width:210px">'+opts+'</select></td>'+
+        '<td>'+(done?'<span class="pill ok">已提交</span>':'<span class="pill warn">待评分</span>')+'</td>'+
+        '<td class="c-act"><button type="button" class="btn btn-ghost btn-sm" data-clear="1">清空</button></td></tr>';
+    }).join('');
+    tb.querySelectorAll('tr').forEach(function(tr){
+      var jid=tr.getAttribute('data-jid');
+      tr.querySelector('[data-sel]').addEventListener('change',function(e){
+        var j=s.judges.find(function(x){return x.id===jid;});var old=j.projectId;
+        j.projectId=e.target.value;persist();
+        var p=s.projects.find(function(x){return x.id===j.projectId;});
+        toast(j.name+' 已切换到「'+(p?p.name:'')+'」');
+        renderDispatch();renderProg();refreshChrome();
+      });
+      tr.querySelector('[data-clear]').addEventListener('click',function(){
+        if(s.scores[jid])delete s.scores[jid][tr.querySelector('[data-sel]').value];
+        persist();renderDispatch();renderProg();renderRoster();refreshChrome();toast('已清空该评委对此项目的评分');
+      });
+    });
+    var dc=document.getElementById('dispatch-count');
+    var live=s.judges.filter(function(j){return !!j.projectId;}).length;
+    dc.textContent=live+' / '+s.judges.length+' 位评委已分配项目';
+    var bp=s.projects.find(function(p){return p.id===(s.judges[0]&&s.judges[0].projectId);});
+    var onSame=s.judges.length&&s.judges.every(function(j){return j.projectId===s.judges[0].projectId;});
+    document.getElementById('dispatch-note').textContent=onSame&&bp
+      ? '当前全员统一评审：'+bp.name
+      : '当前评委分散在多个项目上，可点击「全员切换到该项目」统一。';
+  }
+  document.getElementById('btn-bulk').addEventListener('click',function(){
+    var pid=document.getElementById('bulk-proj').value;
+    s.judges.forEach(function(j){j.projectId=pid;});
+    persist();renderDispatch();renderProg();renderRoster();refreshChrome();
+    var p=s.projects.find(function(x){return x.id===pid;});toast('全员已切换到「'+(p?p.name:'')+'」');
+  });
+  document.getElementById('btn-next').addEventListener('click',function(){
+    if(!s.projects.length)return;
+    var cur=s.judges[0]&&s.judges[0].projectId;
+    var idx=s.projects.findIndex(function(p){return p.id===cur;});
+    var nx=s.projects[(idx+1+s.projects.length)%s.projects.length];
+    s.judges.forEach(function(j){j.projectId=nx.id;});
+    persist();renderDispatch();renderProg();renderRoster();refreshChrome();toast('已切到下一项：'+nx.name);
+  });
+  function renderProg(){
+    var box=document.getElementById('prog-list');
+    box.innerHTML=s.projects.map(function(p){
+      var d=projectDone(s,p.id), pct=s.judges.length?Math.round(d/s.judges.length*100):0;
+      return '<div class="prog"><span class="pname">'+esc(p.name)+'</span>'+
+        '<span class="ptrack"><i style="width:'+pct+'%"></i></span>'+
+        '<span class="pval">'+d+'/'+s.judges.length+'</span></div>';
+    }).join('');
+  }
+
+  /* ── stage / export ───────────────────────────────── */
+  function renderStage(){
+    document.getElementById('sw-open').checked=!!s.open;
+    document.getElementById('sw-reveal').checked=!!s.revealed;
+    document.getElementById('export-summary').textContent=countScores(s)+' 份评分 · '+s.projects.length+' 个项目';
+  }
+  document.getElementById('sw-open').addEventListener('change',function(e){s.open=e.target.checked;persist();refreshChrome();toast(s.open?'评分通道已开启':'评分通道已关闭');});
+  document.getElementById('sw-reveal').addEventListener('change',function(e){s.revealed=e.target.checked;persist();refreshChrome();toast(s.revealed?'大屏已揭晓结果':'大屏已隐藏分数');});
+  document.getElementById('btn-open').addEventListener('click',function(){s.open=!s.open;persist();renderStage();refreshChrome();toast(s.open?'评分通道已开启':'评分通道已关闭');});
+
+  function download(name,text){
+    var blob=new Blob(['\ufeff'+text],{type:'text/csv;charset=utf-8'});
+    var url=URL.createObjectURL(blob);var a=document.createElement('a');
+    a.href=url;a.download=name;document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(url);a.remove();},120);
+  }
+  document.getElementById('btn-csv-scores').addEventListener('click',function(){
+    var head=['评委','机构','项目','赛道'].concat(s.dimensions.map(function(d){return d.name+'('+d.weight+'%)';})).concat(['加权总分','提交时间']);
+    var rows=[head.join(',')];
+    s.judges.forEach(function(j){
+      s.projects.forEach(function(p){
+        var e=entry(s,p.id,j.id); if(!e)return;
+        var line=[j.name,j.org,p.name,p.track];
+        s.dimensions.forEach(function(d){line.push(e.values[d.id]!=null?e.values[d.id]:'');});
+        line.push(weighted(s.dimensions,e.values).toFixed(1));
+        line.push(new Date(e.at).toLocaleString('zh-CN'));
+        rows.push(line.map(csvCell).join(','));
+      });
+    });
+    download('FinVote_评分明细.csv',rows.join('\r\n'));toast('评分明细已导出');
+  });
+  document.getElementById('btn-csv-rank').addEventListener('click',function(){
+    var rows=[['排名','项目','团队','有效评委数','最终得分'].join(',')];
+    board().forEach(function(r,i){
+      rows.push([i+1,r.project.name,r.project.team,r.trim.effective,(r.trim.mean==null?'':r.trim.mean.toFixed(2))].map(csvCell).join(','));
+    });
+    download('FinVote_项目排名.csv',rows.join('\r\n'));toast('项目排名已导出');
+  });
+  function csvCell(v){v=String(v==null?'':v);return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+  function weighted(dims,vals){var t=0,w=0;dims.forEach(function(d){w+=d.weight;var v=vals?vals[d.id]:null;if(typeof v==='number'&&!isNaN(v))t+=v*d.weight;});return w?t/w:0;}
+  function board(){
+    return s.projects.map(function(p){return {project:p,trim:agg(p.id)};})
+      .sort(function(a,b){if(a.trim.mean==null&&b.trim.mean==null)return 0;if(a.trim.mean==null)return 1;if(b.trim.mean==null)return -1;return b.trim.mean-a.trim.mean;});
+  }
+  function agg(pid){
+    var list=s.judges.map(function(j){return entry(s,pid,j.id);}).filter(Boolean).map(function(e){return weighted(s.dimensions,e.values);}).sort(function(a,b){return a-b;});
+    var n=list.length;
+    if(!n)return {mean:null,n:0,effective:0};
+    var use=list;
+    if(s.rule==='trimmed-mean'&&n>=3)use=list.slice(1,-1);
+    else if(s.rule==='drop-high'&&n>=2)use=list.slice(0,-1);
+    return {mean:use.reduce(function(a,b){return a+b;},0)/use.length,n:n,effective:use.length};
+  }
+
+  var resetFn=function(){s=seedState();save(s);renderAll();toast('已重置为示例数据');};
+  document.getElementById('btn-reset').addEventListener('click',resetFn);
+  document.getElementById('btn-reset2').addEventListener('click',resetFn);
+
+  /* ── chrome / all ─────────────────────────────────── */
+  function refreshChrome(){
+    document.getElementById('sb-name').textContent=s.competition;
+    document.getElementById('sb-stage').textContent=s.stage;
+    document.getElementById('tb-sub').textContent=s.projects.length+' 个项目 · '+s.judges.length+' 位评委 · '+countScores(s)+' 份评分';
+    document.getElementById('tb-saved').textContent='已自动保存 · '+new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('btn-open').textContent=s.open?'关闭评分':'开启评分';
+    document.getElementById('rule-summary').textContent=ruleText[s.rule]+' · 有效 '+effectiveN(s)+' 份';
+    document.getElementById('nav-setup').textContent=s.dimensions.length+' 维度';
+    document.getElementById('nav-roster').textContent=s.projects.length+'/'+s.judges.length;
+    document.getElementById('nav-dispatch').textContent=s.projects.length+' 项';
+    document.getElementById('nav-stage').textContent=s.revealed?'已揭晓':'未揭晓';
+    inpComp.value=s.competition;inpStage.value=s.stage;
+    inpNp.value=s.projects.length;inpNj.value=s.judges.length;
+  }
+  function renderAll(){renderDimRows();renderRoster();renderDispatch();renderProg();renderStage();refreshChrome();}
+  renderScaleOpts();renderRuleOpts();renderAll();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>评委评分端 · FinVote 评赛系统</title>
+<style>
+  :root{
+    --bg:      oklch(97.6% 0.010 258);
+    --surface: oklch(100% 0 0);
+    --fg:      oklch(24.4% 0.061 262);
+    --muted:   oklch(53.5% 0.057 260);
+    --border:  oklch(90.5% 0.026 258);
+    --accent:  oklch(54.6% 0.215 263);
+
+    --accent-strong: oklch(48.5% 0.198 262.5);
+    --accent-strong-hover: oklch(43% 0.178 262);
+    --ok-ink:     oklch(45.5% 0.125 158);
+    --warn-ink:   oklch(50% 0.115 72);
+    --danger-ink: oklch(50% 0.185 28);
+    --info-ink:   oklch(48% 0.17 258);
+
+    --accent-soft: color-mix(in oklch, var(--accent) 14%, transparent);
+    --fg-soft:     color-mix(in oklch, var(--fg) 6%, transparent);
+    --fg-softer:   color-mix(in oklch, var(--fg) 3.5%, transparent);
+    --ok-soft:     color-mix(in oklch, var(--ok-ink) 14%, transparent);
+    --warn-soft:   color-mix(in oklch, var(--warn-ink) 15%, transparent);
+    --info-soft:   color-mix(in oklch, var(--info-ink) 13%, transparent);
+
+    --font-display: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-body:    -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+    --gap-xs:8px; --gap-sm:12px; --gap-md:20px; --gap-lg:28px;
+    --radius:9px; --radius-lg:13px;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  img,svg{display:block;max-width:100%}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer}
+  p{margin:0;text-wrap:pretty}
+  h1,h2,h3{margin:0;text-wrap:balance}
+  .mono,.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  .meta{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+  .hint{font-size:12.5px;color:var(--muted);line-height:1.6}
+  h1{font-family:var(--font-display);font-size:clamp(26px,3vw,36px);font-weight:660;letter-spacing:-0.025em;line-height:1.12}
+  h2{font-family:var(--font-display);font-size:19px;font-weight:640;letter-spacing:-0.02em}
+  h3{font-family:var(--font-display);font-size:14.5px;font-weight:620;letter-spacing:-0.01em}
+  .lead{font-size:14.5px;line-height:1.6;color:var(--muted);max-width:60ch}
+  .container{max-width:1160px;margin-inline:auto;padding-inline:28px}
+  @media (max-width:700px){.container{padding-inline:18px}}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;border-radius:var(--radius);border:1px solid transparent;font-size:14px;font-weight:540;transition:background .15s ease,border-color .15s ease,color .15s ease,transform .05s ease,opacity .15s ease}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--accent-strong);color:var(--surface);border-color:var(--accent-strong)}
+  .btn-primary:hover{background:var(--accent-strong-hover)}
+  .btn-secondary{background:var(--surface);color:var(--fg);border-color:var(--border)}
+  .btn-secondary:hover{border-color:var(--fg)}
+  .btn-ghost{background:transparent;color:var(--muted);border-color:transparent;padding-inline:8px}
+  .btn-ghost:hover{color:var(--fg)}
+  .btn-block{width:100%}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)}
+  .panel-head .t{font-family:var(--font-display);font-size:14.5px;font-weight:630}
+  .panel-body{padding:18px}
+  .stack{display:flex;flex-direction:column;gap:14px}
+  .row{display:flex;align-items:center;gap:12px}
+  .row-between{display:flex;align-items:center;justify-content:space-between;gap:12px}
+
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field > label{font-size:12.5px;color:var(--muted)}
+  .input,.select{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--fg);font:inherit;font-size:15px}
+  .input:focus,.select:focus{outline:2px solid var(--accent-soft);border-color:var(--accent)}
+  .input.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;text-align:center}
+
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:2.5px 9px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.02em;white-space:nowrap}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-ink)}
+  .pill.info{background:var(--info-soft);color:var(--info-ink)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn-ink)}
+  .pill.idle{background:var(--fg-soft);color:var(--muted)}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex:0 0 auto}
+  .pill.live .dot{animation:pulse 1.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* ── login ─────────────────────────────── */
+  .login-wrap{min-height:100vh;display:grid;place-items:center;padding:32px 18px}
+  .login-card{width:100%;max-width:440px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:30px 30px 26px}
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .brand .mark{width:28px;height:28px;border:1px solid var(--fg);border-radius:7px;display:grid;place-items:center;font-family:var(--font-mono);font-size:13px;font-weight:700}
+  .brand .name{font-family:var(--font-display);font-size:16px;font-weight:650}
+  .login-err{color:var(--danger-ink);font-size:12.5px;min-height:18px}
+  .demo-list{margin-top:20px;border-top:1px solid var(--border);padding-top:16px}
+  .demo-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);width:100%;background:transparent;border-left:0;border-right:0;border-top:0;text-align:left}
+  .demo-item:last-child{border-bottom:0}
+  .demo-item:hover .dn{color:var(--fg)}
+  .demo-item .dn{font-size:13px;font-weight:560}
+
+  /* ── scoring app ───────────────────────── */
+  .jtop{position:sticky;top:0;z-index:10;background:color-mix(in oklch,var(--bg) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}
+  .jtop-inner{display:flex;align-items:center;justify-content:space-between;gap:14px;padding-block:12px}
+  .me{display:flex;align-items:center;gap:11px}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--fg-soft);display:grid;place-items:center;font-family:var(--font-mono);font-size:14px;font-weight:700;flex:0 0 auto}
+  .me .mname{font-size:14px;font-weight:620;line-height:1.25}
+  .me .morg{font-size:11.5px;color:var(--muted);font-family:var(--font-mono)}
+
+  .layout{display:grid;grid-template-columns:1.55fr 1fr;gap:var(--gap-md);align-items:start;padding-block:26px 60px}
+  @media (max-width:940px){.layout{grid-template-columns:1fr}}
+
+  .proj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px 24px;position:relative;overflow:hidden}
+  .proj-card .who{font-family:var(--font-mono);font-size:11px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted)}
+  .proj-card h1{margin:8px 0 6px}
+  .proj-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .switch-banner{display:none;align-items:center;gap:9px;background:var(--info-soft);color:var(--info-ink);border-radius:var(--radius);padding:10px 14px;font-size:13px;margin-bottom:14px}
+  .switch-banner.show{display:flex}
+
+  .dim{padding:16px 0;border-bottom:1px solid var(--border)}
+  .dim:last-of-type{border-bottom:0}
+  .dim-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px}
+  .dim-name{font-size:14.5px;font-weight:580}
+  .dim-w{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+  .dim-ctl{display:grid;grid-template-columns:1fr 78px;gap:14px;align-items:center}
+  input[type=range]{width:100%;accent-color:var(--accent-strong);height:24px}
+  .total-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--fg-softer);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-top:16px}
+  .total-bar .tl{font-size:12.5px;color:var(--muted)}
+  .total-num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:40px;font-weight:600;letter-spacing:-0.03em;line-height:1}
+  .total-num small{font-size:14px;color:var(--muted);font-weight:500;margin-left:3px}
+
+  .score-list .sl-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+  .score-list .sl-row:last-child{border-bottom:0}
+  .score-list .sl-name{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .score-list .sl-row.cur{font-weight:600}
+
+  .paused{display:none;align-items:center;gap:10px;background:var(--warn-soft);color:var(--warn-ink);border-radius:var(--radius);padding:11px 15px;font-size:13px;margin-bottom:14px}
+  .paused.show{display:flex}
+
+  .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);background:var(--fg);color:var(--surface);padding:10px 18px;border-radius:999px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:60}
+  .toast.show{opacity:1;transform:translate(-50%,0)}
+  :focus-visible{outline:2px solid color-mix(in oklch,var(--accent) 55%,transparent);outline-offset:2px;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="login-wrap" id="view-login" data-od-id="judge-login">
+  <div class="login-card">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">FV</span>
+      <span class="name">评委评分端</span>
+    </div>
+    <h2 style="margin-bottom:6px">验证评委身份</h2>
+    <p class="lead" style="margin-bottom:20px">选择你的姓名并输入 4 位 PIN，即可进入评分台。PIN 由组委会在后台配置。</p>
+    <div class="stack">
+      <div class="field">
+        <label for="sel-judge">评委</label>
+        <select class="select" id="sel-judge"></select>
+      </div>
+      <div class="field">
+        <label for="inp-pin">PIN 码</label>
+        <input class="input num" id="inp-pin" inputmode="numeric" maxlength="4" placeholder="4 位数字" style="letter-spacing:0.3em;text-align:center" />
+      </div>
+      <div class="login-err" id="login-err"></div>
+      <button type="button" class="btn btn-primary btn-block" id="btn-login" data-od-id="btn-login">登入评分台</button>
+    </div>
+    <div class="demo-list">
+      <div class="meta" style="margin-bottom:8px">演示账号 · 点击自动填入</div>
+      <div id="demo-accounts"></div>
+    </div>
+  </div>
+</div>
+
+<div id="view-score" style="display:none" data-od-id="judge-scoring">
+  <header class="jtop">
+    <div class="container jtop-inner">
+      <div class="me">
+        <span class="avatar" id="me-initial">—</span>
+        <span>
+          <span class="mname" id="me-name">—</span>
+          <span class="morg" id="me-org">—</span>
+        </span>
+      </div>
+      <div class="row">
+        <span class="pill info live" id="live-pill"><span class="dot"></span>已连接调度台</span>
+        <button type="button" class="btn btn-ghost" id="btn-logout">退出</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="layout">
+      <div>
+        <div class="switch-banner" id="switch-banner">
+          <span class="dot" style="background:currentColor"></span>
+          <span id="switch-text">主持人已切换你的评审对象</span>
+        </div>
+        <div class="paused" id="paused-banner">
+          <span>评分通道已暂停，请联系组委会开启后再提交。</span>
+        </div>
+
+        <div class="proj-card">
+          <div class="who">当前评审项目 · 由组委会实时调度</div>
+          <h1 id="cur-name">—</h1>
+          <div class="proj-meta">
+            <span class="pill idle" id="cur-team">—</span>
+            <span class="pill idle" id="cur-track">—</span>
+            <span class="pill info" id="cur-seq">—</span>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:var(--gap-md)">
+          <div class="panel-head">
+            <span class="t">多维度打分</span>
+            <span class="meta" id="scale-note">每维度 0–100 分</span>
+          </div>
+          <div class="panel-body" id="dim-list" style="padding-top:4px"></div>
+        </div>
+
+        <div class="panel" style="margin-top:var(--gap-md)">
+          <div class="panel-head"><span class="t">评语（选填）</span></div>
+          <div class="panel-body">
+            <textarea class="input" id="inp-comment" rows="3" style="resize:vertical;line-height:1.6" placeholder="给选手的一句话点评，将随评分一并存档"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel">
+          <div class="panel-head"><span class="t">加权总分</span><span class="meta" id="entry-state">未提交</span></div>
+          <div class="panel-body">
+            <div class="row-between" style="align-items:flex-end">
+              <div>
+                <div class="total-num" id="total-num">80.0<small>分</small></div>
+                <div class="hint" style="margin-top:6px" id="total-calc">各维度得分按权重折算</div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary btn-block" id="btn-submit" style="margin-top:18px" data-od-id="btn-submit">提交评分</button>
+            <p class="hint" style="margin-top:10px" id="submit-hint">提交后仍可返回修改，直到通道关闭。</p>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:var(--gap-md)">
+          <div class="panel-head"><span class="t">我的评分进度</span><span class="meta" id="my-progress">—</span></div>
+          <div class="panel-body score-list" id="my-list"></div>
+        </div>
+
+        <div class="panel" style="margin-top:var(--gap-md)">
+          <div class="panel-head"><span class="t">计分规则</span></div>
+          <div class="panel-body stack">
+            <p class="hint" id="rule-line">—</p>
+            <p class="hint">你的这一份评分将与其他评委的评分一起，按现行规则计算项目最终成绩。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var KEY='fintech-vote-state-v1';
+  var ME_KEY='fintech-vote-me';
+  function seedState(){
+    return {
+      competition:'2026 金融科技创新演讲大赛 · 总决赛',
+      stage:'决赛 · 第一轮', scale:100, rule:'trimmed-mean', open:true, revealed:false, rev:1, updatedAt:Date.now(),
+      dimensions:[
+        {id:'d1',name:'金融科技专业度',weight:25},{id:'d2',name:'内容与逻辑深度',weight:25},
+        {id:'d3',name:'表达与感染力',weight:20},{id:'d4',name:'创新与商业价值',weight:20},
+        {id:'d5',name:'时间控制与台风',weight:10}
+      ],
+      projects:[
+        {id:'p1',name:'链上票 · 供应链票据流转平台',team:'深金所 · 票据组',track:'数字金融基础设施'},
+        {id:'p2',name:'智能信贷风控引擎',team:'微众银行 · 风控实验室',track:'普惠信贷'},
+        {id:'p3',name:'跨境支付「一账通」',team:'连连国际 · 清算网络组',track:'跨境支付'},
+        {id:'p4',name:'ESG 数据银行',team:'中碳数科 · 数据银行组',track:'绿色金融'},
+        {id:'p5',name:'声纹盾 · 语音反诈防线',team:'蚂蚁集团 · 安全科技',track:'金融安全'},
+        {id:'p6',name:'数字人民币离线商圈',team:'工行软开 · 数币应用组',track:'数字人民币'}
+      ],
+      judges:[
+        {id:'j1',name:'陈立',org:'中金资本 · 董事总经理',pin:'2041',projectId:'p1'},
+        {id:'j2',name:'苏敏',org:'蚂蚁集团 · 首席架构师',pin:'3087',projectId:'p1'},
+        {id:'j3',name:'王皓',org:'清华五道口金融学院 · 副教授',pin:'4520',projectId:'p1'},
+        {id:'j4',name:'李维',org:'红杉中国 · 投资合伙人',pin:'5833',projectId:'p1'},
+        {id:'j5',name:'周芸',org:'招商银行 · 数字金融部总监',pin:'6190',projectId:'p1'},
+        {id:'j6',name:'郑昊',org:'建信金科 · 首席产品官',pin:'7724',projectId:'p1'}
+      ],scores:{}
+    };
+  }
+  function load(){try{var r=localStorage.getItem(KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
+  function save(s){s.updatedAt=Date.now();s.rev=(s.rev||0)+1;try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}return s;}
+  function ensure(){var s=load();if(!s){s=seedState();save(s);}return s;}
+  function weighted(dims,vals){var t=0,w=0;dims.forEach(function(d){w+=d.weight;var v=vals?vals[d.id]:null;if(typeof v==='number'&&!isNaN(v))t+=v*d.weight;});return w?t/w:0;}
+  function entry(s,pid,jid){var j=s.scores[jid];return j?j[pid]:null;}
+  var ruleText={'trimmed-mean':'去掉最高分与最低分后取平均','drop-high':'去掉一个最高分后取平均','mean':'全部有效评委取平均'};
+
+  var s=ensure();
+  var meId=null;
+  try{meId=localStorage.getItem(ME_KEY);}catch(e){}
+  var formValues={}, seenProject=null;
+  var toastEl=document.getElementById('toast'),toastTimer=null;
+  function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(function(){toastEl.classList.remove('show');},2000);}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function me(){return s.judges.find(function(j){return j.id===meId;})||null;}
+
+  /* ── login ─────────────────────────────── */
+  function renderLogin(){
+    var sel=document.getElementById('sel-judge');
+    sel.innerHTML=s.judges.map(function(j){return '<option value="'+j.id+'">'+esc(j.name)+' · '+esc(j.org.split(' · ')[0])+'</option>';}).join('');
+    var dl=document.getElementById('demo-accounts');
+    dl.innerHTML=s.judges.map(function(j){
+      return '<button type="button" class="demo-item" data-j="'+j.id+'"><span class="dn">'+esc(j.name)+'</span><span class="meta">PIN '+esc(j.pin)+'</span></button>';
+    }).join('');
+    dl.querySelectorAll('.demo-item').forEach(function(b){
+      b.addEventListener('click',function(){
+        document.getElementById('sel-judge').value=b.getAttribute('data-j');
+        document.getElementById('inp-pin').value=s.judges.find(function(j){return j.id===b.getAttribute('data-j');}).pin;
+        document.getElementById('login-err').textContent='';
+      });
+    });
+  }
+  function doLogin(){
+    var id=document.getElementById('sel-judge').value;
+    var pin=document.getElementById('inp-pin').value.trim();
+    var j=s.judges.find(function(x){return x.id===id;});
+    if(!j){document.getElementById('login-err').textContent='请选择评委';return;}
+    if(pin!==String(j.pin)){document.getElementById('login-err').textContent='PIN 码不正确，请重新输入';return;}
+    meId=id;try{localStorage.setItem(ME_KEY,id);}catch(e){}
+    enterScore(true);
+  }
+  document.getElementById('btn-login').addEventListener('click',doLogin);
+  document.getElementById('inp-pin').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
+  document.getElementById('btn-logout').addEventListener('click',function(){
+    meId=null;try{localStorage.removeItem(ME_KEY);}catch(e){}
+    document.getElementById('view-score').style.display='none';
+    document.getElementById('view-login').style.display='grid';
+    renderLogin();
+  });
+
+  /* ── scoring ───────────────────────────── */
+  function loadFormFor(pid){
+    formValues={};
+    var e=entry(s,pid,meId);
+    s.dimensions.forEach(function(d){
+      formValues[d.id]=e&&e.values&&typeof e.values[d.id]==='number'?e.values[d.id]:80;
+    });
+    document.getElementById('inp-comment').value=e?(e.comment||''):'';
+  }
+  function renderDims(){
+    var box=document.getElementById('dim-list');
+    box.innerHTML=s.dimensions.map(function(d){
+      var v=formValues[d.id];
+      return '<div class="dim" data-dim="'+d.id+'">'+
+        '<div class="dim-top"><span class="dim-name">'+esc(d.name)+'</span><span class="dim-w">权重 '+d.weight+'%</span></div>'+
+        '<div class="dim-ctl">'+
+          '<input type="range" min="0" max="100" step="1" value="'+v+'" data-range="1" aria-label="'+esc(d.name)+'得分" />'+
+          '<input class="input num" type="number" min="0" max="100" value="'+v+'" data-num="1" aria-label="'+esc(d.name)+'数值" />'+
+        '</div></div>';
+    }).join('');
+    box.querySelectorAll('.dim').forEach(function(row){
+      var id=row.getAttribute('data-dim');
+      var r=row.querySelector('[data-range]'),n=row.querySelector('[data-num]');
+      function set(v){v=Math.max(0,Math.min(100,Math.round(Number(v)||0)));formValues[id]=v;r.value=v;n.value=v;updateTotal();}
+      r.addEventListener('input',function(){set(r.value);});
+      n.addEventListener('input',function(){set(n.value);});
+    });
+    updateTotal();
+  }
+  function updateTotal(){
+    var t=weighted(s.dimensions,formValues);
+    document.getElementById('total-num').innerHTML=t.toFixed(1)+'<small>分</small>';
+    var active=s.dimensions.length;
+    document.getElementById('total-calc').textContent=active+' 个维度加权折算 · 权重合计 '+s.dimensions.reduce(function(a,d){return a+d.weight;},0)+'%';
+  }
+  function renderScore(){
+    var j=me(); if(!j){meId=null;try{localStorage.removeItem(ME_KEY);}catch(e){}document.getElementById('view-score').style.display='none';document.getElementById('view-login').style.display='grid';renderLogin();return;}
+    document.getElementById('me-initial').textContent=j.name.slice(0,1);
+    document.getElementById('me-name').textContent=j.name;
+    document.getElementById('me-org').textContent=j.org;
+    document.getElementById('live-pill').className='pill '+(s.open?'info live':'warn');
+    document.getElementById('live-pill').innerHTML=(s.open?'<span class="dot"></span>':'')+(s.open?'已连接调度台':'通道已暂停');
+    document.getElementById('paused-banner').classList.toggle('show',!s.open);
+    document.getElementById('scale-note').textContent='每维度 0–100 分 · 权重合计 '+s.dimensions.reduce(function(a,d){return a+d.weight;},0)+'%';
+    document.getElementById('rule-line').textContent='现行计分规则：'+ruleText[s.rule]+'。你的评分与其余评委的评分合并后计入最终成绩。';
+
+    var p=s.projects.find(function(x){return x.id===j.projectId;});
+    var seq=p?s.projects.indexOf(p)+1:0;
+    document.getElementById('cur-name').textContent=p?p.name:'暂未分配评审项目';
+    document.getElementById('cur-team').textContent=p?p.team:'—';
+    document.getElementById('cur-track').textContent=p?p.track:'—';
+    document.getElementById('cur-seq').textContent=p?('项目 '+String(seq).padStart(2,'0')+' / '+String(s.projects.length).padStart(2,'0')):'—';
+
+    var pid=p?p.id:null;
+    if(pid!==seenProject){
+      var first=(seenProject===null);
+      loadFormFor(pid);renderDims();seenProject=pid;
+      if(!first&&p){document.getElementById('switch-text').textContent='主持人已把你切换到「'+p.name+'」，可开始评分';document.getElementById('switch-banner').classList.add('show');toast('已切换评审项目：'+p.name);}
+    }
+    renderDimWeights();renderMyList();renderEntryState();
+  }
+  function renderDimWeights(){
+    document.querySelectorAll('#dim-list .dim').forEach(function(row){
+      var id=row.getAttribute('data-dim');var d=s.dimensions.find(function(x){return x.id===id;});
+      if(d)row.querySelector('.dim-w').textContent='权重 '+d.weight+'%';
+    });
+  }
+  function renderMyList(){
+    var j=me();var box=document.getElementById('my-list');
+    var done=0;
+    box.innerHTML=s.projects.map(function(p){
+      var e=entry(s,p.id,meId);if(e)done++;
+      var cur=j&&j.projectId===p.id;
+      return '<div class="sl-row'+(cur?' cur':'')+'"><span class="sl-name">'+esc(p.name)+'</span>'+
+        '<span class="pill '+(e?'ok':'idle')+'">'+(e?weighted(s.dimensions,e.values).toFixed(1)+' 分':'待评')+'</span></div>';
+    }).join('');
+    document.getElementById('my-progress').textContent=done+' / '+s.projects.length+' 已提交';
+  }
+  function renderEntryState(){
+    var j=me();if(!j)return;
+    var e=entry(s,j.projectId,meId);
+    var st=document.getElementById('entry-state'),btn=document.getElementById('btn-submit');
+    if(e){st.textContent='已提交';st.className='meta';btn.textContent='更新评分';btn.disabled=!s.open;}
+    else{st.textContent='未提交';btn.textContent='提交评分';btn.disabled=!s.open;}
+    document.getElementById('submit-hint').textContent=s.open?'提交后仍可返回修改，直到通道关闭。':'评分通道已暂停，暂时无法提交。';
+  }
+  document.getElementById('btn-submit').addEventListener('click',function(){
+    var j=me();if(!j||!j.projectId){toast('当前没有可评分的项目');return;}
+    if(!s.open){toast('评分通道已关闭');return;}
+    var vals={};s.dimensions.forEach(function(d){vals[d.id]=formValues[d.id];});
+    if(!s.scores[j.id])s.scores[j.id]={};
+    s.scores[j.id][j.projectId]={values:vals,comment:document.getElementById('inp-comment').value.trim(),at:Date.now()};
+    save(s);
+    renderEntryState();renderMyList();
+    toast('已提交「'+(s.projects.find(function(p){return p.id===j.projectId;})||{}).name+'」评分：'+weighted(s.dimensions,vals).toFixed(1)+' 分');
+  });
+
+  function enterScore(justLoggedIn){
+    document.getElementById('view-login').style.display='none';
+    document.getElementById('view-score').style.display='block';
+    seenProject=null;
+    renderScore();
+    if(justLoggedIn){var j=me();if(j)toast('欢迎，'+j.name+' 评委');}
+  }
+
+  /* ── live sync ─────────────────────────── */
+  function poll(){
+    var fresh=load();
+    if(!fresh)return;
+    var stale=(fresh.rev||0)!==(s.rev||0)||fresh.updatedAt!==s.updatedAt;
+    s=fresh;
+    if(document.getElementById('view-score').style.display==='none')return;
+    if(stale)renderScore();
+  }
+  window.addEventListener('storage',function(e){if(e.key===KEY)poll();});
+  setInterval(poll,1300);
+
+  /* ── boot ──────────────────────────────── */
+  renderLogin();
+  if(meId&&s.judges.some(function(j){return j.id===meId;})){enterScore(false);}
+})();
+</script>
+</body>
+</html>

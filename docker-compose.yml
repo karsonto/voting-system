@@ -1,0 +1,37 @@
+# ==========================================================================
+# 一键启动：docker compose up -d --build
+# 起来后访问 http://localhost:8080
+# ==========================================================================
+services:
+  finvote:
+    build:
+      # 构建上下文必须是仓库根目录：镜像里要同时拿到 frontend 与 backend
+      context: .
+      dockerfile: backend/Dockerfile
+    image: finvote:1.0.0
+    container_name: finvote
+    restart: unless-stopped
+    ports:
+      - "${FINVOTE_PORT:-8080}:8080"
+    environment:
+      # ---- 安全项：正式部署务必改掉，或用 .env 文件提供 ----
+      FINVOTE_SECRET: ${FINVOTE_SECRET:-finvote-dev-secret-change-me-in-production}
+      FINVOTE_ADMIN_USERNAME: ${FINVOTE_ADMIN_USERNAME:-admin}
+      FINVOTE_ADMIN_PASSWORD: ${FINVOTE_ADMIN_PASSWORD:-admin123}
+      # ---- 数据落盘位置（对应下面的卷） ----
+      FINVOTE_DB_PATH: /app/data/finvote.db
+      # JVM 内存上限，按现场机器调整
+      JAVA_OPTS: "-Xms256m -Xmx512m -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
+    volumes:
+      # 命名卷保存 SQLite 文件，容器重建不丢数据
+      - finvote-data:/app/data
+    healthcheck:
+      # 运行镜像里装的是 curl（temurin 基础镜像不含 wget）
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/api/public/version >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 40s
+      retries: 3
+
+volumes:
+  finvote-data:

@@ -1,0 +1,26 @@
+# 构建上下文压缩：这些内容要么体积大，要么会被构建过程重新生成
+frontend/node_modules
+backend/target
+
+# 前端产物由镜像内 npm run build 重新生成，避免把本机旧产物打进镜像
+backend/src/main/resources/static
+
+# 本地运行产生的数据与日志，绝不能进镜像
+data
+*.db
+*.db-wal
+*.db-shm
+*.log
+backend/data
+backend/server.log
+
+# IDE / VCS / 文档
+.idea
+.vscode
+.git
+.gitignore
+design
+tools
+*.md
+docker-compose.yml
+.env

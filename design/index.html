@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FinVote · 金融科技演讲评赛系统总览</title>
+<style>
+  :root{
+    --bg:      oklch(97.6% 0.010 258);
+    --surface: oklch(100% 0 0);
+    --fg:      oklch(24.4% 0.061 262);
+    --muted:   oklch(53.5% 0.057 260);
+    --border:  oklch(90.5% 0.026 258);
+    --accent:  oklch(54.6% 0.215 263);
+    --accent-strong:       oklch(48.5% 0.198 262.5);
+    --accent-strong-hover: oklch(43% 0.178 262);
+
+    --ok-ink:     oklch(45.5% 0.125 158);
+    --warn-ink:   oklch(50% 0.115 72);
+    --danger-ink: oklch(50% 0.185 28);
+    --info-ink:   oklch(48% 0.17 258);
+
+    --accent-soft: color-mix(in oklch, var(--accent) 14%, transparent);
+    --fg-soft:     color-mix(in oklch, var(--fg) 5%, transparent);
+    --ok-soft:     color-mix(in oklch, var(--ok-ink) 14%, transparent);
+    --warn-soft:   color-mix(in oklch, var(--warn-ink) 14%, transparent);
+    --info-soft:   color-mix(in oklch, var(--info-ink) 14%, transparent);
+
+    --font-display: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-body:    -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --font-mono:    'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+    --gap-xs:8px; --gap-sm:12px; --gap-md:20px; --gap-lg:32px; --gap-xl:48px;
+    --radius:10px; --radius-lg:14px;
+    --container:1200px; --gutter:32px;
+  }
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;color:var(--fg);
+    background-color:var(--bg);
+    background-image:linear-gradient(180deg,oklch(95.2% 0.024 258) 0%,var(--bg) 560px);
+    font-family:var(--font-body);font-size:15px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  img,svg{display:block;max-width:100%}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer}
+  p{margin:0;text-wrap:pretty}
+  h1,h2,h3{margin:0;text-wrap:balance}
+  .mono,.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+  .container{max-width:var(--container);margin-inline:auto;padding-inline:var(--gutter)}
+  .section{padding-block:clamp(40px,6vw,72px)}
+  .section + .section{border-top:1px solid var(--border)}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--gap-lg)}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap-md)}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap-md)}
+  .stack{display:flex;flex-direction:column}
+  .stack > * + *{margin-top:var(--gap-md)}
+  .row{display:flex;align-items:center;gap:var(--gap-md)}
+  .row-between{display:flex;align-items:center;justify-content:space-between;gap:var(--gap-md)}
+  @media (max-width:920px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+
+  h1{font-family:var(--font-display);font-size:clamp(34px,4.4vw,52px);line-height:1.06;letter-spacing:-0.025em;font-weight:680}
+  h2{font-family:var(--font-display);font-size:clamp(22px,2.4vw,30px);line-height:1.15;letter-spacing:-0.02em;font-weight:640}
+  h3{font-family:var(--font-display);font-size:17px;line-height:1.3;font-weight:620;letter-spacing:-0.01em}
+  .lead{font-size:16px;line-height:1.6;color:var(--muted);max-width:60ch}
+  .eyebrow{font-family:var(--font-mono);font-size:12px;letter-spacing:0.09em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+  .meta{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+
+  .topnav{position:sticky;top:0;z-index:20;background:color-mix(in oklch,var(--bg) 90%,transparent);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  .topnav-inner{display:flex;align-items:center;justify-content:space-between;padding-block:13px;gap:var(--gap-md)}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand .mark{width:26px;height:26px;border:1px solid var(--fg);border-radius:7px;display:grid;place-items:center;font-family:var(--font-mono);font-size:13px;font-weight:700}
+  .brand .name{font-family:var(--font-display);font-size:17px;font-weight:660;letter-spacing:-0.01em}
+  .topnav nav{display:flex;gap:24px}
+  @media (max-width:760px){.topnav nav{display:none}}
+  .topnav nav a{font-size:14px;color:var(--muted)}
+  .topnav nav a:hover{color:var(--fg)}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:var(--radius);border:1px solid transparent;font-size:14px;font-weight:520;transition:background .15s ease,border-color .15s ease,transform .05s ease,color .15s ease}
+  .btn:active{transform:translateY(1px)}
+  .btn-primary{background:var(--accent-strong);color:var(--surface);border-color:var(--accent-strong)}
+  .btn-primary:hover{background:var(--accent-strong-hover)}
+  .btn-secondary{background:transparent;color:var(--fg);border-color:var(--border)}
+  .btn-secondary:hover{border-color:var(--fg)}
+  .btn-ghost{background:transparent;color:var(--fg);border-color:transparent;padding-inline:6px}
+  .btn-ghost:hover{color:color-mix(in oklch,var(--accent) 82%,black)}
+  .arrow::after{content:'\2192';transition:transform .15s ease}
+  .arrow:hover::after{transform:translateX(3px)}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg)}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-family:var(--font-mono);font-size:11px;letter-spacing:0.04em;text-transform:uppercase}
+  .pill.ok{background:var(--ok-soft);color:var(--ok-ink)}
+  .pill.warn{background:var(--warn-soft);color:var(--warn-ink)}
+  .pill.info{background:var(--info-soft);color:var(--info-ink)}
+  .pill.idle{background:var(--fg-soft);color:var(--muted)}
+  .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+
+  .hero{padding-block:clamp(48px,7vw,88px)}
+  .hero h1{margin-bottom:16px;max-width:24ch}
+  .hero .lead{margin-bottom:26px}
+  .hero-cta{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:24px}
+  .hero-status{display:flex;flex-wrap:wrap;gap:10px}
+
+  .entry{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden;transition:border-color .15s ease,transform .15s ease}
+  .entry:hover{border-color:color-mix(in oklch,var(--fg) 28%,var(--border));transform:translateY(-2px)}
+  .entry .entry-top{display:flex;align-items:baseline;justify-content:space-between;padding:20px 22px 12px}
+  .entry .idx{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+  .entry .entry-body{padding:0 22px 16px;flex:1}
+  .entry h3{margin-bottom:8px}
+  .entry p{color:var(--muted);font-size:14px;line-height:1.6}
+  .entry .entry-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 22px;border-top:1px solid var(--border);background:color-mix(in oklch,var(--bg) 55%,var(--surface))}
+  .entry .entry-foot .st{font-family:var(--font-mono);font-size:12px;color:var(--muted)}
+
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--surface)}
+  .step{padding:22px 22px 26px;border-right:1px solid var(--border)}
+  .step:last-child{border-right:0}
+  .step .n{font-family:var(--font-mono);font-size:12px;color:var(--accent);letter-spacing:0.06em}
+  .step h3{margin:12px 0 6px}
+  .step p{color:var(--muted);font-size:13.5px;line-height:1.6}
+  @media (max-width:920px){.steps{grid-template-columns:1fr}.step{border-right:0;border-bottom:1px solid var(--border)}.step:last-child{border-bottom:0}}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 20px;border-bottom:1px solid var(--border)}
+  .panel-head .t{font-family:var(--font-display);font-size:15px;font-weight:620}
+  .panel-body{padding:20px}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border)}
+  .kpi{background:var(--surface);padding:16px 20px}
+  .kpi .k-label{font-family:var(--font-mono);font-size:11px;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted)}
+  .kpi .k-value{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:28px;font-weight:600;letter-spacing:-0.03em;margin-top:6px}
+  .kpi .k-value small{font-size:14px;color:var(--muted);font-weight:500;margin-left:3px}
+  .kpi .k-sub{font-size:12px;color:var(--muted);margin-top:2px}
+  @media (max-width:720px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+
+  .rules{width:100%;border-collapse:collapse;font-size:14px}
+  .rules th,.rules td{padding:11px 0;text-align:left;border-bottom:1px solid var(--border)}
+  .rules th{width:38%;color:var(--muted);font-weight:500;font-family:var(--font-mono);font-size:12px;letter-spacing:0.03em}
+  .rules tr:last-child th,.rules tr:last-child td{border-bottom:0}
+  .rules td .num{font-weight:600}
+
+  .wbar{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+  .wbar:last-child{border-bottom:0}
+  .wbar .wname{width:170px;font-size:14px}
+  .wbar .wtrack{flex:1;height:7px;border-radius:999px;background:var(--fg-soft);overflow:hidden}
+  .wbar .wtrack i{display:block;height:100%;background:var(--accent);border-radius:999px}
+  .wbar .wval{width:52px;text-align:right;font-family:var(--font-mono);font-size:13px;font-weight:600}
+
+  .pagefoot{padding-block:var(--gap-xl);color:var(--muted);font-size:13px;border-top:1px solid var(--border)}
+  .pagefoot .row-between{flex-wrap:wrap;gap:var(--gap-md)}
+
+  :focus-visible{outline:2px solid color-mix(in oklch,var(--accent) 55%,transparent);outline-offset:2px;border-radius:6px}
+</style>
+</head>
+<body>
+<header class="topnav" data-od-id="topnav">
+  <div class="container topnav-inner">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">FV</span>
+      <span class="name">FinVote · 评赛系统</span>
+    </div>
+    <nav aria-label="页面导航">
+      <a href="admin-console.html">后台配置台</a>
+      <a href="judge-scoring.html">评委评分端</a>
+      <a href="scoreboard.html">总分大屏</a>
+    </nav>
+    <a class="btn btn-primary" href="admin-console.html" data-od-id="cta-open-admin">打开后台配置台</a>
+  </div>
+</header>
+
+<main id="content">
+  <section class="section hero" data-od-id="overview-hero">
+    <div class="container">
+      <p class="eyebrow">2026 金融科技创新演讲大赛 · 组委会工作台</p>
+      <h1>三块屏幕，跑完一场演讲比赛的完整评分流程。</h1>
+      <p class="lead">后台配置赛制维度并实时调度评委正在评的项目；评委端登入后按百分制多维度加权打分；总分大屏按「去掉最高分与最低分后取平均」自动生成排行并一键揭晓。</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="admin-console.html">打开后台配置台</a>
+        <a class="btn btn-secondary" href="scoreboard.html">预览总分大屏</a>
+      </div>
+      <div class="hero-status">
+        <span class="pill ok"><span class="dot"></span><span id="st-open">评分开放中</span></span>
+        <span class="pill idle" id="st-reveal">结果未揭晓</span>
+        <span class="pill info" id="st-stage">决赛 · 第一轮</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="surfaces">
+    <div class="container">
+      <div class="row-between" style="margin-bottom:22px">
+        <h2>三个操作入口</h2>
+        <span class="meta">同一份赛事实时数据 · 跨页面同步</span>
+      </div>
+      <div class="grid-3">
+        <article class="card entry" data-od-id="entry-admin">
+          <div class="entry-top"><span class="idx">01 / 后台</span><span class="pill idle" id="admin-pill">等待配置</span></div>
+          <div class="entry-body">
+            <h3>后台配置台</h3>
+            <p>设定参赛项目与评委名单、编辑维度权重，并把任意评委实时切换到他正在评的项目。</p>
+          </div>
+          <div class="entry-foot"><span class="st" id="admin-st">—</span><a class="btn btn-ghost arrow" href="admin-console.html">打开</a></div>
+        </article>
+        <article class="card entry" data-od-id="entry-judge">
+          <div class="entry-top"><span class="idx">02 / 评委</span><span class="pill idle" id="judge-pill">待登入</span></div>
+          <div class="entry-body">
+            <h3>评委评分端</h3>
+            <p>评委凭工号与 PIN 登入，对当前项目按五个维度打分，系统实时折算加权总分。</p>
+          </div>
+          <div class="entry-foot"><span class="st" id="judge-st">—</span><a class="btn btn-ghost arrow" href="judge-scoring.html">打开</a></div>
+        </article>
+        <article class="card entry" data-od-id="entry-board">
+          <div class="entry-top"><span class="idx">03 / 大屏</span><span class="pill idle" id="board-pill">未就绪</span></div>
+          <div class="entry-body">
+            <h3>总分大屏</h3>
+            <p>投影到主会场大屏，展示各项目实时均分与排行，揭晓前自动隐藏具体分数。</p>
+          </div>
+          <div class="entry-foot"><span class="st" id="board-st">—</span><a class="btn btn-ghost arrow" href="scoreboard.html">打开</a></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="flow">
+    <div class="container">
+      <p class="eyebrow" style="margin-bottom:18px">RUN OF SHOW</p>
+      <h2 style="margin-bottom:22px">主持人视角的一轮流程</h2>
+      <div class="steps">
+        <div class="step"><span class="n">STEP 01</span><h3>配置赛制</h3><p>录入项目与评委，确认百分制维度权重合计 100%。</p></div>
+        <div class="step"><span class="n">STEP 02</span><h3>调度项目</h3><p>轮到某项目时，后台把评委批量切换到他正在评审的对象。</p></div>
+        <div class="step"><span class="n">STEP 03</span><h3>评委打分</h3><p>评委端即时收到当前项目，逐维度打分并提交。</p></div>
+        <div class="step"><span class="n">STEP 04</span><h3>大屏揭晓</h3><p>系统去掉最高最低分取平均，组委会一键公开排行。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" data-od-id="state">
+    <div class="container">
+      <div class="grid-2" style="gap:var(--gap-lg);align-items:start">
+        <div class="panel">
+          <div class="panel-head"><span class="t">当前赛事实况</span><span class="meta" id="rev-label">rev —</span></div>
+          <div class="kpi-grid">
+            <div class="kpi"><div class="k-label">参赛项目</div><div class="k-value" id="k-projects">0</div><div class="k-sub">后台可设定</div></div>
+            <div class="kpi"><div class="k-label">评委人数</div><div class="k-value" id="k-judges">0</div><div class="k-sub">后台可设定</div></div>
+            <div class="kpi"><div class="k-label">已提交评分</div><div class="k-value" id="k-scores">0</div><div class="k-sub">份评分单</div></div>
+            <div class="kpi"><div class="k-label">已产生成绩</div><div class="k-value" id="k-covered">0<small>/0</small></div><div class="k-sub">项目有有效分</div></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><span class="t">现行计分规则</span><a class="btn btn-ghost arrow" href="admin-console.html">修改</a></div>
+          <div class="panel-body">
+            <table class="rules">
+              <tbody>
+                <tr><th>评分制式</th><td>百分制 · 多维度加权</td></tr>
+                <tr><th>计分规则</th><td>去掉最高分与最低分后取平均</td></tr>
+                <tr><th>有效评分计算</th><td>有效评委数 <span class="num" id="k-effective">—</span></td></tr>
+                <tr><th>维度权重合计</th><td><span class="num" id="k-weight">100%</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:var(--gap-md)">
+        <div class="panel-head"><span class="t">维度权重</span><span class="meta">加权折算为最终百分制得分</span></div>
+        <div class="panel-body" id="weight-list"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="pagefoot" data-od-id="footer">
+  <div class="container row-between">
+    <span>FinVote · 2026 金融科技创新演讲大赛组委会</span>
+    <span class="meta">原型演示 · 数据保存在本机浏览器</span>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var KEY='fintech-vote-state-v1';
+  function seedState(){
+    return {
+      competition:'2026 金融科技创新演讲大赛 · 总决赛',
+      stage:'决赛 · 第一轮',
+      scale:100, rule:'trimmed-mean', open:true, revealed:false, rev:1, updatedAt:Date.now(),
+      dimensions:[
+        {id:'d1',name:'金融科技专业度',weight:25},
+        {id:'d2',name:'内容与逻辑深度',weight:25},
+        {id:'d3',name:'表达与感染力',weight:20},
+        {id:'d4',name:'创新与商业价值',weight:20},
+        {id:'d5',name:'时间控制与台风',weight:10}
+      ],
+      projects:[
+        {id:'p1',name:'链上票 · 供应链票据流转平台',team:'深金所 · 票据组',track:'数字金融基础设施'},
+        {id:'p2',name:'智能信贷风控引擎',team:'微众银行 · 风控实验室',track:'普惠信贷'},
+        {id:'p3',name:'跨境支付「一账通」',team:'连连国际 · 清算网络组',track:'跨境支付'},
+        {id:'p4',name:'ESG 数据银行',team:'中碳数科 · 数据银行组',track:'绿色金融'},
+        {id:'p5',name:'声纹盾 · 语音反诈防线',team:'蚂蚁集团 · 安全科技',track:'金融安全'},
+        {id:'p6',name:'数字人民币离线商圈',team:'工行软开 · 数币应用组',track:'数字人民币'}
+      ],
+      judges:[
+        {id:'j1',name:'陈立',org:'中金资本 · 董事总经理',pin:'2041',projectId:'p1'},
+        {id:'j2',name:'苏敏',org:'蚂蚁集团 · 首席架构师',pin:'3087',projectId:'p1'},
+        {id:'j3',name:'王皓',org:'清华五道口金融学院 · 副教授',pin:'4520',projectId:'p1'},
+        {id:'j4',name:'李维',org:'红杉中国 · 投资合伙人',pin:'5833',projectId:'p1'},
+        {id:'j5',name:'周芸',org:'招商银行 · 数字金融部总监',pin:'6190',projectId:'p1'},
+        {id:'j6',name:'郑昊',org:'建信金科 · 首席产品官',pin:'7724',projectId:'p1'}
+      ],
+      scores:{}
+    };
+  }
+  function load(){try{var r=localStorage.getItem(KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
+  function ensure(){var s=load();if(!s){s=seedState();try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}}return s;}
+  function weighted(dims,vals){var t=0,w=0;dims.forEach(function(d){w+=d.weight;var v=vals?vals[d.id]:null;if(typeof v==='number'&&!isNaN(v))t+=v*d.weight;});return w?t/w:0;}
+  function entry(s,pid,jid){var j=s.scores[jid];return j?j[pid]:null;}
+  function countScores(s){var n=0;Object.keys(s.scores).forEach(function(j){n+=Object.keys(s.scores[j]).length;});return n;}
+  function covered(s){return s.projects.filter(function(p){var c=0;s.judges.forEach(function(j){if(entry(s,p.id,j.id))c++;});return c>0;}).length;}
+  function effectiveN(s){var n=s.judges.length;return n>=3?n-2:0;}
+  var s=ensure();
+  function txt(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
+  var nScores=countScores(s), nCov=covered(s), nJ=s.judges.length, nP=s.projects.length;
+  txt('st-open', s.open?'评分开放中':'评分已关闭');
+  txt('st-reveal', s.revealed?'结果已揭晓':'结果未揭晓');
+  txt('st-stage', s.stage);
+  var openPill=document.getElementById('st-open'), revPill=document.getElementById('st-reveal');
+  if(openPill){openPill.className='pill '+(s.open?'ok':'warn');}
+  if(revPill){revPill.className='pill '+(s.revealed?'ok':'idle');}
+  txt('k-projects', nP); txt('k-judges', nJ); txt('k-scores', nScores);
+  var covEl=document.getElementById('k-covered'); if(covEl)covEl.innerHTML=nCov+'<small>/'+nP+'</small>';
+  txt('k-effective', nJ>=3?('= 评委数 '+nJ+' − 2 = '+effectiveN(s)+' 份'):'不足 3 位评委，直接取平均');
+  txt('k-weight', s.dimensions.reduce(function(a,d){return a+d.weight;},0)+'%');
+  txt('rev-label','rev '+(s.rev||1));
+  txt('admin-st', nP+' 个项目 · '+nJ+' 位评委');
+  txt('judge-st', nScores+' 份评分已提交');
+  txt('board-st', s.open?'评分进行中':'评分已关闭');
+  var ap=document.getElementById('admin-pill'); if(ap)ap.className='pill ok';
+  var jp=document.getElementById('judge-pill'); if(jp){jp.className='pill '+(s.open?'info':'idle'); jp.textContent=s.open?'可登入':'暂停';}
+  var bp=document.getElementById('board-pill'); if(bp){bp.className='pill '+(nCov?'ok':'idle'); bp.textContent=nCov?'已就绪':'未就绪';}
+  var wl=document.getElementById('weight-list');
+  if(wl){
+    wl.innerHTML=s.dimensions.map(function(d){
+      var pct=Math.max(0,Math.min(100,d.weight));
+      return '<div class="wbar"><span class="wname">'+d.name+'</span><span class="wtrack"><i style="width:'+pct+'%"></i></span><span class="wval">'+d.weight+'%</span></div>';
+    }).join('');
+  }
+})();
+</script>
+</body>
+</html>

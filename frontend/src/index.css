@@ -1,0 +1,205 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply m-0 bg-canvas text-ink font-sans text-[14px] leading-[1.55] antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply m-0 text-balance font-semibold tracking-[-0.02em];
+  }
+
+  p {
+    @apply m-0;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500/45 ring-offset-2 ring-offset-white rounded-[6px];
+  }
+
+  /* 数字统一使用等宽字形，避免排行榜数字跳动 */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-lg border border-line bg-surface shadow-card;
+  }
+
+  .panel-head {
+    @apply flex items-center justify-between gap-3 border-b border-line px-4 py-3.5;
+  }
+
+  .panel-title {
+    @apply text-[14.5px] font-semibold tracking-[-0.01em];
+  }
+
+  .panel-body {
+    @apply p-4;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded border border-transparent px-3.5 py-2
+      text-[13.5px] font-medium transition
+      active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0;
+  }
+
+  .btn-primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700;
+  }
+
+  .btn-secondary {
+    @apply border-line bg-surface text-ink hover:border-ink-faint;
+  }
+
+  .btn-ghost {
+    @apply px-2 text-ink-muted hover:text-ink;
+  }
+
+  .btn-danger {
+    @apply border-danger-ink/30 text-danger-ink hover:bg-danger-soft;
+  }
+
+  .btn-sm {
+    @apply px-2.5 py-1.5 text-[12.5px];
+  }
+
+  .btn-block {
+    @apply w-full;
+  }
+
+  .input,
+  .select,
+  .textarea {
+    @apply w-full rounded border border-line bg-surface px-3 py-2 text-[13.5px] text-ink
+      placeholder:text-ink-faint focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 focus:outline-none;
+  }
+
+  .select {
+    @apply cursor-pointer appearance-none bg-no-repeat pr-8;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235B6880' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-position: right 10px center;
+  }
+
+  .input-num {
+    @apply font-mono tnum;
+  }
+
+  .field {
+    @apply flex flex-col gap-1.5;
+  }
+
+  .field-label {
+    @apply text-[12.5px] text-ink-muted;
+  }
+
+  .hint {
+    @apply text-[12.5px] leading-relaxed text-ink-muted;
+  }
+
+  .meta {
+    @apply font-mono text-xs text-ink-muted;
+  }
+
+  .eyebrow {
+    @apply font-mono text-xs uppercase tracking-[0.09em] text-brand-600;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-[3px]
+      font-mono text-[11px] tracking-[0.02em];
+  }
+
+  .pill-ok {
+    @apply bg-ok-soft text-ok-ink;
+  }
+
+  .pill-warn {
+    @apply bg-warn-soft text-warn-ink;
+  }
+
+  .pill-danger {
+    @apply bg-danger-soft text-danger-ink;
+  }
+
+  .pill-info {
+    @apply bg-info-soft text-info-ink;
+  }
+
+  .pill-idle {
+    @apply bg-ink/5 text-ink-muted;
+  }
+
+  .dot {
+    @apply h-1.5 w-1.5 shrink-0 rounded-full bg-current;
+  }
+
+  .tbl {
+    @apply w-full border-collapse text-[13.5px];
+  }
+
+  .tbl th {
+    @apply bg-ink/[0.03] px-3 py-2.5 text-left font-mono text-[10.5px] font-medium
+      uppercase tracking-[0.05em] text-ink-muted;
+  }
+
+  .tbl td {
+    @apply border-b border-line px-3 py-2.5 align-middle;
+  }
+
+  .tbl tbody tr:hover {
+    @apply bg-ink/[0.02];
+  }
+
+  .tbl tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .switch {
+    @apply inline-flex cursor-pointer select-none items-center gap-3;
+  }
+
+  .switch-track {
+    @apply relative h-[23px] w-[42px] shrink-0 rounded-full bg-ink/20 transition-colors;
+  }
+
+  .switch-track::after {
+    content: '';
+    @apply absolute left-[2.5px] top-[2.5px] h-[18px] w-[18px] rounded-full bg-white shadow-sm transition-transform;
+  }
+
+  .switch input:checked + .switch-track {
+    @apply bg-brand-500;
+  }
+
+  .switch input:checked + .switch-track::after {
+    transform: translateX(19px);
+  }
+
+  .progress-track {
+    @apply h-1.5 flex-1 overflow-hidden rounded-full bg-ink/[0.07];
+  }
+
+  .progress-bar {
+    @apply block h-full rounded-full bg-brand-500 transition-[width] duration-300;
+  }
+
+  .toast {
+    @apply pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 translate-y-3 rounded-full
+      bg-ink px-4 py-2.5 text-[13px] text-white opacity-0 shadow-lift transition;
+  }
+
+  .toast-show {
+    @apply translate-y-0 opacity-100;
+  }
+}
