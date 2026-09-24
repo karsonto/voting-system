@@ -7,6 +7,7 @@ backend/src/main/resources/static
 
 # 本地运行产生的数据与日志，绝不能进镜像
 data
+backup
 *.db
 *.db-wal
 *.db-shm

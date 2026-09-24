@@ -85,13 +85,24 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
+启动后数据库文件就在项目目录下的 **`./data/finvote.db`**，用宿主机的任何工具都能直接查看、拷贝、备份。
+
+其他常用命令：
+
+```bash
+docker compose logs -f          # 查看日志
+docker compose restart          # 重启（数据保留）
+docker compose down             # 停止并删除容器（数据仍保留在 ./data）
+docker compose down && rm -rf data   # 彻底清空数据
+```
+
 Windows 上也可以用随附的脚本，功能等价：
 
 ```powershell
 .\docker.ps1 -Action start     # 构建并启动，末尾打印访问地址
 .\docker.ps1 -Action backup    # 备份 SQLite 到 .\backup\
 .\docker.ps1 -Action logs      # 查看日志
-.\docker.ps1 -Action reset     # 清空数据卷，回到空库
+.\docker.ps1 -Action reset     # 清空 .\data 数据库，回到空库
 ```
 
 ### 方式三：直接拉取官方镜像
@@ -102,16 +113,45 @@ CI 会在每次发布时自动构建镜像并推送到 Docker Hub，不装 JDK/M
 # 最新版（把 <dockerhub-user> 换成你的 Docker Hub 用户名）
 docker run -d --name finvote \
   -p 8080:8080 \
-  -v finvote-data:/app/data \
+  -v "$PWD/data:/app/data" \
   -e FINVOTE_SECRET=请换成随机长字符串 \
   -e FINVOTE_ADMIN_PASSWORD=请换成强密码 \
   <dockerhub-user>/finvote:latest
 
 # 指定版本（推荐，可复现）
-docker run -d -p 8080:8080 -v finvote-data:/app/data <dockerhub-user>/finvote:v1.0.0
+docker run -d --name finvote -p 8080:8080 -v "$PWD/data:/app/data" <dockerhub-user>/finvote:v1.0.0
 ```
 
-> 数据必须挂到 `/app/data`，否则容器删除时 SQLite 文件会一起丢失。
+Windows PowerShell 下 `$PWD` 换成 `${PWD}` 或绝对路径：
+
+```powershell
+docker run -d --name finvote -p 8080:8080 -v "${PWD}\data:/app/data" `
+  -e FINVOTE_SECRET=请换成随机长字符串 -e FINVOTE_ADMIN_PASSWORD=请换成强密码 `
+  <dockerhub-user>/finvote:latest
+```
+
+### 数据持久化（重要）
+
+数据库通过**宿主机目录映射**到容器，这是刻意的选择：数据文件就在你看得见的地方，不藏在 Docker 的卷里。
+
+| 项 | 说明 |
+|---|---|
+容器内路径 | `/app/data/finvote.db` |
+宿主机路径 | 项目目录下的 `./data/finvote.db` |
+映射方式 | `volumes: - ./data:/app/data`（compose）或 `-v "$PWD/data:/app/data"`（docker run） |
+
+由此带来的好处：
+
+- **删容器不丢数据**：`docker compose down` 甚至 `docker rm -f finvote` 之后，`./data/finvote.db` 原样还在
+- **换机器只需拷目录**：把整个 `./data` 目录复制到新机器，启动后赛事数据、评委、评分全都在
+- **备份不依赖 Docker**：直接复制 `./data/finvote.db` 即可（服务停止时复制最稳妥）
+
+```bash
+# 手工备份（停服后复制，确保 WAL 已归并）
+docker compose stop && cp data/finvote.db backup-$(date +%Y%m%d).db && docker compose start
+```
+
+> 为什么不直接用命名卷？命名卷的内容藏在 Docker 虚拟机里，Windows/macOS 下不易直接访问，备份与迁移都要绕一层临时容器。赛事场景更需要「数据就在手边」的确定性。
 
 ### 镜像标签规则
 
@@ -296,7 +336,7 @@ jdbc:sqlite:<db-path>?foreign_keys=on&busy_timeout=10000&journal_mode=WAL
 - `foreign_keys=on` — `PRAGMA` 是按连接生效的，写在 URL 里最可靠，保证级联删除生效
 - `journal_mode=WAL` — 允许读写并发，避免大屏高频轮询时阻塞写入
 
-> **备份提醒**：WAL 模式下最新写入可能还在 `-wal` 文件里，直接复制主文件会丢数据。请使用 `docker.ps1 -Action backup`，它会先停容器归并 WAL 再复制。
+> **备份提醒**：WAL 模式下最新写入可能还在 `-wal` 文件里，服务运行中直接复制主文件可能丢数据。请先 `docker compose stop`，再复制 `data/finvote.db`；或直接使用 `docker.ps1 -Action backup`，它会自动停服归并 WAL 后复制。
 
 ---
 
@@ -307,7 +347,7 @@ jdbc:sqlite:<db-path>?foreign_keys=on&busy_timeout=10000&journal_mode=WAL
 | 配置 | 环境变量 | 默认值 | 说明 |
 |---|---|---|---|
 | `server.port` | — | `8080` | 服务端口 |
-| `finvote.db-path` | `FINVOTE_DB_PATH` | `data/finvote.db` | 数据库文件，相对路径基于启动目录 |
+| `finvote.db-path` | `FINVOTE_DB_PATH` | `data/finvote.db` | 数据库文件，相对路径基于启动目录；容器内由 compose 固定为 `/app/data/finvote.db` |
 | `finvote.secret` | `FINVOTE_SECRET` | 开发用占位值 | **令牌签名密钥，正式部署务必修改** |
 | `finvote.admin-token-minutes` | — | `720` | 管理员令牌有效期（分钟） |
 | `finvote.judge-token-minutes` | — | `720` | 评委令牌有效期（分钟） |
@@ -350,9 +390,11 @@ voting-system/
 │       └── pages/                    四个页面与后台各功能面板
 ├── design/                           原始设计稿（HTML，供对照）
 ├── tools/e2e-test.ps1                端到端验收脚本
-├── docker-compose.yml
+├── docker-compose.yml                一键启动，数据库映射到宿主机 ./data
 ├── docker.ps1 / docker.cmd           交付脚本
-└── .env.example
+├── .env.example
+├── data/                             SQLite 数据目录（映射进容器，不入库）
+└── backup/                           备份输出目录（不入库）
 
 ---
 

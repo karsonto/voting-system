@@ -10,7 +10,6 @@ setlocal
 cd /d "%~dp0"
 
 set IMAGE=finvote:1.0.0
-set VOLUME=votingsystem_finvote-data
 set PORT=8080
 if exist ".env" (
   for /f "tokens=1,2 delims==" %%a in ('findstr /b /c:"FINVOTE_PORT" .env 2^>nul') do set PORT=%%b
@@ -91,8 +90,14 @@ set STAMP=%DATE:~0,4%%DATE:~5,2%%DATE:~8,2%-%TIME:~0,2%%TIME:~3,2%%TIME:~6,2%
 set STAMP=%STAMP: =0%
 if not exist "backup" mkdir "backup"
 
+rem 数据库就映射在宿主机 .\data 下，直接用文件复制即可
+if not exist "data\finvote.db" (
+  echo 未找到 data\finvote.db，服务可能尚未首次启动过
+  goto :eof
+)
+
 rem SQLite 开了 WAL，最新写入可能还在 -wal 文件里没落回主库。
-rem 为了拿到一致快照，先停容器让 WAL 归并，再整卷复制。
+rem 为了拿到一致快照，先停容器让 WAL 归并，再复制。
 set WASRUNNING=
 for /f "delims=" %%n in ('docker ps --filter "name=^/finvote$" --format "{{.Names}}"') do set WASRUNNING=%%n
 if defined WASRUNNING (
@@ -100,8 +105,10 @@ if defined WASRUNNING (
   docker compose stop >nul
 )
 
-rem 借临时容器挂载数据卷复制，不依赖宿主机是否装了 sqlite3
-docker run --rm -v "finvote-data:/from:ro" -v "%CD%\backup:/to" alpine sh -c "cp -a /from/finvote.db /to/finvote-%STAMP%.db" 2>nul
+copy /y "data\finvote.db" "backup\finvote-%STAMP%.db" >nul
+rem 保险起见把伴生文件一并带走，便于在别处完整还原
+if exist "data\finvote.db-wal" copy /y "data\finvote.db-wal" "backup\finvote-%STAMP%.db-wal" >nul
+if exist "data\finvote.db-shm" copy /y "data\finvote.db-shm" "backup\finvote-%STAMP%.db-shm" >nul
 
 if defined WASRUNNING (
   echo 重新启动容器...
@@ -110,18 +117,21 @@ if defined WASRUNNING (
 
 if exist "backup\finvote-%STAMP%.db" (
   echo 备份完成：backup\finvote-%STAMP%.db
-  echo 恢复方式：docker.cmd stop，把该文件覆盖回数据卷里的 finvote.db，再 docker.cmd start
+  echo 恢复方式：docker.cmd stop，把该文件覆盖回 data\finvote.db，再 docker.cmd start
 ) else (
-  echo 未生成备份文件，数据卷内可能还没有数据库（服务尚未首次启动过）
+  echo 备份失败
 )
 goto :eof
 
 :reset
 call :checkdocker || exit /b 1
-echo 此操作将删除数据卷 %VOLUME%，所有赛事数据与账号都会丢失。
+echo 此操作将删除 data\finvote.db，所有赛事数据与账号都会丢失。
 set /p ANSWER=确认请输入 YES:
 if /i not "%ANSWER%"=="YES" ( echo 已取消 & goto :eof )
-docker compose down -v
+docker compose down >nul
+rem 数据库映射在宿主机 ./data 目录，必须显式删除文件；
+rem docker compose down -v 只清理命名卷，对宿主目录无效。
+if exist "data\finvote.db" del /q "data\finvote.db*"
 echo 数据已清空，下次启动为全新空库
 goto :eof
 

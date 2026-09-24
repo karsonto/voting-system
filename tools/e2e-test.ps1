@@ -1,8 +1,13 @@
 ﻿# FinVote 端到端接口验证
 # 用法: powershell -ExecutionPolicy Bypass -File tools\e2e-test.ps1
+#       powershell -ExecutionPolicy Bypass -File tools\e2e-test.ps1 -Port 8081
+param(
+    # 服务端口。默认 8080；若本机 8080 已被 IDE 调试进程占用，可指定其他端口。
+    [int]$Port = 8080
+)
 
 $ErrorActionPreference = 'Stop'
-$Base = 'http://localhost:8080'
+$Base = "http://localhost:$Port"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $script:Pass = 0

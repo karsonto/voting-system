@@ -10,9 +10,9 @@
   .\docker.ps1 -Action start      # 构建并后台启动，最后打印访问地址
   .\docker.ps1 -Action status     # 查看容器与健康状态
   .\docker.ps1 -Action logs       # 跟踪日志（Ctrl+C 退出，不影响容器）
-  .\docker.ps1 -Action stop       # 停止并移除容器（保留数据卷）
+  .\docker.ps1 -Action stop       # 停止并移除容器（保留 .\data 数据）
   .\docker.ps1 -Action backup     # 把 SQLite 备份到 .\backup\ 目录
-  .\docker.ps1 -Action reset      # 删除数据卷，回到空库（危险，需二次确认）
+  .\docker.ps1 -Action reset      # 清空 .\data 数据库，回到空库（危险，需二次确认）
 #>
 [CmdletBinding()]
 param(
@@ -27,7 +27,6 @@ param(
 $ErrorActionPreference = 'Stop'
 $ImageName = 'finvote:1.0.0'
 $ContainerName = 'finvote'
-$VolumeName = 'votingsystem_finvote-data'
 $Root = $PSScriptRoot
 
 Set-Location $Root
@@ -125,8 +124,15 @@ switch ($Action) {
         $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
         $target = Join-Path $backupDir "finvote-$stamp.db"
 
+        # 数据库就映射在宿主机 .\data 下，直接用文件复制即可，无需临时容器
+        $dbFile = Join-Path $Root 'data\finvote.db'
+        if (-not (Test-Path $dbFile)) {
+            Write-Host "未找到数据库 $dbFile，服务可能尚未首次启动过" -ForegroundColor Yellow
+            return
+        }
+
         # SQLite 开了 WAL，最新写入可能还在 -wal 文件里没落回主库。
-        # 为了拿到一致快照，先停容器让 WAL 归并，再整卷复制。
+        # 为了拿到一致快照，先停容器让 WAL 归并，再复制。
         $running = docker ps --filter "name=^/$ContainerName$" --format "{{.Names}}"
         $wasRunning = [bool]$running
         if ($wasRunning) {
@@ -134,9 +140,12 @@ switch ($Action) {
             docker compose stop | Out-Null
         }
 
-        # 借一个临时容器挂载数据卷来复制，避免依赖宿主机是否装了 sqlite3
-        docker run --rm -v "${VolumeName}:/from:ro" -v "${backupDir}:/to" alpine `
-            sh -c "cp -a /from/finvote.db /to/finvote-$stamp.db"
+        Copy-Item $dbFile $target -Force
+        # 保险起见把伴生文件一并带走，便于在别处完整还原
+        foreach ($suffix in @('-wal', '-shm')) {
+            $side = "$dbFile$suffix"
+            if (Test-Path $side) { Copy-Item $side "$target$suffix" -Force }
+        }
 
         if ($wasRunning) {
             Write-Host "重新启动容器..." -ForegroundColor Cyan
@@ -148,24 +157,23 @@ switch ($Action) {
             }
         }
 
-        if (Test-Path $target) {
-            $sizeKb = [math]::Round((Get-Item $target).Length / 1KB, 1)
-            Write-Host "备份完成：$target（$sizeKb KB）" -ForegroundColor Green
-            Write-Host "恢复方式：.\docker.ps1 -Action stop，把该文件覆盖回数据卷里的 finvote.db，再 -Action start" -ForegroundColor Yellow
-        } else {
-            Write-Host "未生成备份文件，数据卷内可能还没有数据库（服务尚未首次启动过）" -ForegroundColor Yellow
-        }
+        $sizeKb = [math]::Round((Get-Item $target).Length / 1KB, 1)
+        Write-Host "备份完成：$target（$sizeKb KB）" -ForegroundColor Green
+        Write-Host "恢复方式：先 .\docker.ps1 -Action stop，把该文件覆盖回 .\data\finvote.db，再 -Action start" -ForegroundColor Yellow
     }
 
     'reset' {
         Assert-Docker
-        Write-Host "此操作将删除数据卷 $VolumeName，所有赛事数据与账号都会丢失。" -ForegroundColor Red
+        Write-Host "此操作将删除 .\data\finvote.db，所有赛事数据与账号都会丢失。" -ForegroundColor Red
         $answer = Read-Host "确认请输入 YES"
         if ($answer -ne 'YES') {
             Write-Host "已取消" -ForegroundColor Yellow
             return
         }
-        docker compose down -v
+        docker compose down | Out-Null
+        # 数据库映射在宿主机 ./data 目录，因此必须显式删除文件；
+        # docker compose down -v 只清理命名卷，对宿主目录无效。
+        Get-ChildItem (Join-Path $Root 'data') -Filter 'finvote.db*' -ErrorAction SilentlyContinue | Remove-Item -Force
         Write-Host "数据已清空，下次启动为全新空库" -ForegroundColor Green
     }
 }
