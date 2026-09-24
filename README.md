@@ -94,6 +94,35 @@ Windows 上也可以用随附的脚本，功能等价：
 .\docker.ps1 -Action reset     # 清空数据卷，回到空库
 ```
 
+### 方式三：直接拉取官方镜像
+
+CI 会在每次发布时自动构建镜像并推送到 Docker Hub，不装 JDK/Maven/Node 也能直接跑：
+
+```bash
+# 最新版（把 <dockerhub-user> 换成你的 Docker Hub 用户名）
+docker run -d --name finvote \
+  -p 8080:8080 \
+  -v finvote-data:/app/data \
+  -e FINVOTE_SECRET=请换成随机长字符串 \
+  -e FINVOTE_ADMIN_PASSWORD=请换成强密码 \
+  <dockerhub-user>/finvote:latest
+
+# 指定版本（推荐，可复现）
+docker run -d -p 8080:8080 -v finvote-data:/app/data <dockerhub-user>/finvote:v1.0.0
+```
+
+> 数据必须挂到 `/app/data`，否则容器删除时 SQLite 文件会一起丢失。
+
+### 镜像标签规则
+
+| 触发方式 | 生成的标签 |
+|---|---|
+| 推送到 `main` | `latest`、`main`、`sha-<短哈希>` |
+| 推送 `v*` 标签（如 `v1.0.0`） | `v1.0.0`、`sha-<短哈希>` |
+| 手动触发 workflow | 仅 `sha-<短哈希>` |
+
+生产环境建议固定版本标签，不要用 `latest`。
+
 ### 默认账号
 
 | 角色 | 凭据 | 说明 |
@@ -294,6 +323,8 @@ jdbc:sqlite:<db-path>?foreign_keys=on&busy_timeout=10000&journal_mode=WAL
 
 ```
 voting-system/
+├── .github/workflows/
+│   └── docker-publish.yml            CI：打标签即自动构建并推送镜像
 ├── backend/                          Spring Boot 后端
 │   ├── Dockerfile                    三阶段构建：前端 → 后端 → 运行时
 │   ├── pom.xml
@@ -322,7 +353,6 @@ voting-system/
 ├── docker-compose.yml
 ├── docker.ps1 / docker.cmd           交付脚本
 └── .env.example
-```
 
 ---
 
@@ -352,6 +382,32 @@ cd frontend && npm run build
 # 一条命令完成前后端打包
 cd frontend && npm run build && cd ../backend && mvn -DskipTests package
 ```
+
+---
+
+## 持续集成与发布
+
+`.github/workflows/docker-publish.yml` 在每次发布时自动构建镜像并推送到 Docker Hub。
+
+**触发条件**：推送到 `main`、推送 `v*` 标签、或在 Actions 页面手动触发。
+
+**需要配置的两个仓库密钥**（Settings → Secrets and variables → Actions）：
+
+| 密钥 | 说明 |
+|---|---|
+| `DOCKERHUB_USERNAME` | Docker Hub 用户名 |
+| `DOCKERHUB_TOKEN` | Docker Hub [Access Token](https://hub.docker.com/settings/security)，**不要用登录密码** |
+
+**发布一个新版本的完整流程**：
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0        # 触发 CI，产出镜像 <user>/finvote:v1.0.0
+```
+
+几个实现要点：构建上下文为**仓库根目录**（镜像里要同时拿到 `frontend` 与 `backend`），`file` 指向 `backend/Dockerfile`；平台固定 `linux/amd64`，兼容绝大多数现场机器；启用 GitHub Actions 缓存（`cache-from/to: type=gha`），依赖未变动时重建通常只需十几秒。
+
+> 想在本机复现 CI 的构建路径：`docker buildx build --platform linux/amd64 -f backend/Dockerfile -t finvote:ci-check --load .`
 
 ---
 
