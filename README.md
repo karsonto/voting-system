@@ -409,6 +409,8 @@ git push origin v1.0.0        # 触发 CI，产出镜像 <user>/finvote:v1.0.0
 
 > 想在本机复现 CI 的构建路径：`docker buildx build --platform linux/amd64 -f backend/Dockerfile -t finvote:ci-check --load .`
 
+> **首次配置后 CI 会失败一次**，日志报 `Username and password required` —— 这说明工作流本身正常，只是仓库还没配那两个密钥。配好密钥后重新运行即可通过。
+
 ---
 
 ## 端到端测试
