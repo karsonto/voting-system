@@ -23,6 +23,7 @@ public class ProjectRepository {
         p.setName(rs.getString("name"));
         p.setTeam(rs.getString("team"));
         p.setTrack(rs.getString("track"));
+        p.setMentor(rs.getString("mentor"));
         p.setSortOrder(rs.getInt("sort_order"));
         return p;
     };
@@ -47,20 +48,21 @@ public class ProjectRepository {
 
     public Long insert(Project p) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        namedJdbc.update("INSERT INTO project (competition_id, name, team, track, sort_order) "
-                        + "VALUES (:competitionId, :name, :team, :track, :sortOrder)",
+        namedJdbc.update("INSERT INTO project (competition_id, name, team, track, mentor, sort_order) "
+                        + "VALUES (:competitionId, :name, :team, :track, :mentor, :sortOrder)",
                 new MapSqlParameterSource()
                         .addValue("competitionId", p.getCompetitionId())
                         .addValue("name", p.getName())
                         .addValue("team", p.getTeam())
                         .addValue("track", p.getTrack())
+                        .addValue("mentor", p.getMentor() == null ? "" : p.getMentor())
                         .addValue("sortOrder", p.getSortOrder()),
                 keyHolder);
         Number key = keyHolder.getKey();
         return key == null ? null : key.longValue();
     }
 
-    public void update(Long id, String name, String team, String track, Integer sortOrder) {
+    public void update(Long id, String name, String team, String track, String mentor, Integer sortOrder) {
         StringBuilder sql = new StringBuilder("UPDATE project SET id = id");
         MapSqlParameterSource params = new MapSqlParameterSource().addValue("id", id);
         if (name != null) {
@@ -74,6 +76,10 @@ public class ProjectRepository {
         if (track != null) {
             sql.append(", track = :track");
             params.addValue("track", track);
+        }
+        if (mentor != null) {
+            sql.append(", mentor = :mentor");
+            params.addValue("mentor", mentor);
         }
         if (sortOrder != null) {
             sql.append(", sort_order = :sortOrder");

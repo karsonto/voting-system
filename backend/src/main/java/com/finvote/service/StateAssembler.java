@@ -11,6 +11,7 @@ import com.finvote.dto.BoardRowView;
 import com.finvote.dto.CompetitionView;
 import com.finvote.dto.DimensionView;
 import com.finvote.dto.JudgeAdminView;
+import com.finvote.dto.JudgeScoreView;
 import com.finvote.dto.JudgeView;
 import com.finvote.dto.ProjectView;
 import com.finvote.dto.PublicStateResponse;
@@ -119,6 +120,7 @@ public class StateAssembler {
             v.setName(p.getName());
             v.setTeam(p.getTeam());
             v.setTrack(p.getTrack());
+            v.setMentor(p.getMentor());
             v.setSortOrder(p.getSortOrder());
             v.setJudgeCount(judgeCount);
             Integer submitted = submittedByProject.get(p.getId());
@@ -144,7 +146,16 @@ public class StateAssembler {
         v.setCurrentProjectId(judge.getCurrentProjectId());
         v.setSortOrder(judge.getSortOrder());
         v.setActive(judge.isActive());
+        v.setAvatar(avatarUrl(judge));
         return v;
+    }
+
+    private String avatarUrl(Judge judge) {
+        String filename = judge.getAvatar();
+        if (filename == null || filename.trim().isEmpty()) {
+            return null;
+        }
+        return "/avatars/" + filename;
     }
 
     public List<JudgeAdminView> judgesAdmin(List<Judge> judges, Map<Long, Map<Long, ScoreEntry>> scoresByJudge) {
@@ -158,6 +169,7 @@ public class StateAssembler {
             v.setCurrentProjectId(j.getCurrentProjectId());
             v.setSortOrder(j.getSortOrder());
             v.setActive(j.isActive());
+            v.setAvatar(avatarUrl(j));
 
             Map<Long, ScoreEntry> mine = scoresByJudge.get(j.getId());
             v.setSubmittedCount(mine == null ? 0 : mine.size());
@@ -237,9 +249,8 @@ public class StateAssembler {
     /**
      * 生成排行榜。
      *
-     * @param maskScores 是否隐藏分数。公开接口传 {@code !competition.isRevealed()}，
-     *                   后台接口与 CSV 导出传 {@code false}——组委会在赛程中需要随时看到成绩，
-     *                   只有对会场公开的大屏才需要在揭晓前保密。
+     * @param maskScores 是否隐藏分数。现场大屏与后台都传 {@code false}，按已提交评分实时排名；
+     *                   需要保密时才传 {@code true}。
      */
     public List<BoardRowView> board(List<Project> projects,
                                     List<Judge> judges,
@@ -273,6 +284,7 @@ public class StateAssembler {
             row.setProjectName(p.getName());
             row.setTeam(p.getTeam());
             row.setTrack(p.getTrack());
+            row.setMentor(p.getMentor());
             row.setOrder(order++);
             row.setJudgeCount(judges.size());
 
@@ -385,6 +397,38 @@ public class StateAssembler {
                 indexProjects(loadProjects(competitionId)), indexJudges(loadJudges(competitionId)));
     }
 
+    /** 当前项目下每位评委的加权总分。尚未提交的评委 score 为 null。 */
+    public List<JudgeScoreView> currentJudgeScores(Long projectId, List<Judge> judges, List<ScoreEntry> entries) {
+        List<JudgeScoreView> list = new ArrayList<JudgeScoreView>();
+        List<Judge> shown = new ArrayList<Judge>();
+        for (Judge judge : judges) {
+            if (judge.isActive()) {
+                shown.add(judge);
+            }
+        }
+        if (shown.isEmpty()) {
+            shown = judges;
+        }
+        Map<Long, Double> byJudge = new HashMap<Long, Double>();
+        if (projectId != null) {
+            for (ScoreEntry entry : entries) {
+                if (projectId.equals(entry.getProjectId())) {
+                    byJudge.put(entry.getJudgeId(), ScoreCalculator.round2(entry.getWeightedTotal()));
+                }
+            }
+        }
+        for (Judge judge : shown) {
+            JudgeScoreView view = new JudgeScoreView();
+            view.setJudgeId(judge.getId());
+            view.setName(judge.getName());
+            view.setOrg(judge.getOrg());
+            view.setScore(byJudge.get(judge.getId()));
+            view.setAvatar(avatarUrl(judge));
+            list.add(view);
+        }
+        return list;
+    }
+
     /** 公开状态（大屏、评委端登入页、总览页使用）。 */
     public PublicStateResponse publicState(Competition competition,
                                            List<Dimension> dimensions,
@@ -399,12 +443,14 @@ public class StateAssembler {
         response.setDimensions(dimensions(dimensions));
         response.setProjects(projects(projects, submittedCountByProject(entries), judges.size()));
         response.setJudges(judges(judges));
-        response.setBoard(board(projects, judges, entries, competition.rule(), !competition.isRevealed()));
+        // 现场大屏要实时排名，公开接口直接下发已有分数；没人打分的项目由大屏自己滤掉
+        response.setBoard(board(projects, judges, entries, competition.rule(), false));
         response.setStats(stats(projects, judges, entries, competition.rule()));
 
         Long currentProjectId = resolveCurrentProject(judges);
         response.setCurrentProjectId(currentProjectId);
         response.setJudgesAligned(currentProjectId != null && allAligned(judges, currentProjectId));
+        response.setCurrentScores(currentJudgeScores(currentProjectId, judges, entries));
         return response;
     }
 

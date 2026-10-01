@@ -117,6 +117,7 @@ public class JudgeService {
             view.setName(current.getName());
             view.setTeam(current.getTeam());
             view.setTrack(current.getTrack());
+            view.setMentor(current.getMentor());
             view.setSortOrder(current.getSortOrder());
             view.setJudgeCount(judges.size());
             view.setSubmittedCount(submittedByProject.getOrDefault(current.getId(), 0));

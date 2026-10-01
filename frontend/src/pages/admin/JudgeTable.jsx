@@ -5,7 +5,7 @@ import { pad2 } from '../../lib/format.js'
 /**
  * 评委名单：维护姓名、机构、PIN，以及查看当前评审项目。
  */
-export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onRandomPin, busy }) {
+export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onUploadAvatar, onRandomPin, busy }) {
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState(null)
 
@@ -28,6 +28,7 @@ export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onRand
           <thead>
             <tr>
               <th className="w-[42px]">#</th>
+              <th className="w-[88px]">头像</th>
               <th className="w-[120px]">姓名</th>
               <th>机构 / 职务</th>
               <th className="w-[110px]">登入 PIN</th>
@@ -63,6 +64,9 @@ export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onRand
               ) : (
                 <tr key={judge.id}>
                   <td className="font-mono text-xs text-ink-muted">{pad2(index + 1)}</td>
+                  <td>
+                    <AvatarCell judge={judge} busy={busy} onUpload={onUploadAvatar} />
+                  </td>
                   <td className="font-medium">
                     {judge.name}
                     {!judge.active && (
@@ -121,6 +125,31 @@ export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onRand
   )
 }
 
+function AvatarCell({ judge, busy, onUpload }) {
+  return (
+    <label className={`inline-flex items-center gap-2 ${busy ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}>
+      {judge.avatar ? (
+        <img src={judge.avatar} alt="" className="h-10 w-10 rounded-md object-cover ring-1 ring-line" />
+      ) : (
+        <span className="grid h-10 w-10 place-items-center rounded-md bg-canvas text-[11px] text-ink-muted ring-1 ring-line">
+          上传
+        </span>
+      )}
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        className="sr-only"
+        disabled={busy}
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          e.target.value = ''
+          if (file) onUpload?.(judge.id, file)
+        }}
+      />
+    </label>
+  )
+}
+
 function DraftRow({ initial = { name: '', org: '', pin: '', active: true }, onRandomPin, onCancel, onConfirm }) {
   const [value, setValue] = useState({
     name: initial.name ?? '',
@@ -164,6 +193,7 @@ function DraftRow({ initial = { name: '', org: '', pin: '', active: true }, onRa
   return (
     <tr className="bg-brand-50/60">
       <td className="font-mono text-xs text-ink-muted">NEW</td>
+      <td className="text-xs text-ink-muted">保存后可上传</td>
       <td>
         <input
           className="input py-1.5"

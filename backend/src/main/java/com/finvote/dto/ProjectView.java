@@ -12,6 +12,7 @@ public class ProjectView {
     private String name;
     private String team;
     private String track;
+    private String mentor;
     private int sortOrder;
 
     /** 已提交评分的评委数。 */

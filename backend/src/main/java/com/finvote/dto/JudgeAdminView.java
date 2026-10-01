@@ -15,6 +15,8 @@ public class JudgeAdminView {
     private Long currentProjectId;
     private int sortOrder;
     private boolean active;
+    /** 头像访问路径，未上传时为 null。 */
+    private String avatar;
 
     /** 该评委当前项目是否已提交评分。 */
     private boolean submittedOnCurrent;

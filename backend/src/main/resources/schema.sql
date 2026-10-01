@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS project (
     name           TEXT    NOT NULL,
     team           TEXT    NOT NULL DEFAULT '',
     track          TEXT    NOT NULL DEFAULT '',
+    mentor         TEXT    NOT NULL DEFAULT '',
     sort_order     INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (competition_id) REFERENCES competition (id) ON DELETE CASCADE
 );
@@ -73,6 +74,7 @@ CREATE TABLE IF NOT EXISTS judge (
     current_project_id INTEGER,
     sort_order         INTEGER NOT NULL DEFAULT 0,
     active             INTEGER NOT NULL DEFAULT 1,
+    avatar             TEXT    NOT NULL DEFAULT '',
     FOREIGN KEY (competition_id) REFERENCES competition (id) ON DELETE CASCADE,
     FOREIGN KEY (current_project_id) REFERENCES project (id) ON DELETE SET NULL
 );

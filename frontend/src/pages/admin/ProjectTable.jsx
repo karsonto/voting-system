@@ -26,9 +26,10 @@ export function ProjectTable({ projects, judgeCount, onAdd, onUpdate, onDelete, 
           <thead>
             <tr>
               <th className="w-[42px]">#</th>
-              <th>项目名称</th>
-              <th className="w-[200px]">团队</th>
-              <th className="w-[170px]">赛道</th>
+              <th className="min-w-[140px]">项目名称</th>
+              <th className="w-[160px]">团队</th>
+              <th className="w-[140px]">赛道</th>
+              <th className="w-[140px]">导师</th>
               <th className="w-[130px]">评分进度</th>
               <th className="w-[70px]" />
             </tr>
@@ -36,7 +37,7 @@ export function ProjectTable({ projects, judgeCount, onAdd, onUpdate, onDelete, 
           <tbody>
             {adding && (
               <DraftRow
-                placeholder={{ name: '项目名称', team: '团队', track: '赛道' }}
+                placeholder={{ name: '项目名称', team: '团队', track: '赛道', mentor: '导师姓名' }}
                 onCancel={() => setAdding(false)}
                 onConfirm={async (value) => {
                   await onAdd(value)
@@ -83,7 +84,7 @@ function ProjectRow({ project, index, judgeCount, busy, onUpdate, onDelete, draf
   if (isEditing) {
     return (
       <DraftRow
-        initial={{ name: project.name, team: project.team, track: project.track }}
+        initial={{ name: project.name, team: project.team, track: project.track, mentor: project.mentor }}
         onCancel={() => setDraft(null)}
         onConfirm={async (value) => {
           await onUpdate(project.id, value)
@@ -96,9 +97,10 @@ function ProjectRow({ project, index, judgeCount, busy, onUpdate, onDelete, draf
   return (
     <tr>
       <td className="font-mono text-xs text-ink-muted">{pad2(index + 1)}</td>
-      <td className="font-medium">{project.name}</td>
+      <td className="whitespace-nowrap font-medium">{project.name}</td>
       <td className="text-ink-muted">{project.team || '—'}</td>
       <td className="text-ink-muted">{project.track || '—'}</td>
+      <td className="text-ink-muted">{project.mentor || '—'}</td>
       <td>
         <div className="flex items-center gap-2">
           <span className="progress-track">
@@ -134,7 +136,7 @@ function ProjectRow({ project, index, judgeCount, busy, onUpdate, onDelete, draf
 }
 
 /** 新增 / 编辑共用的行内表单。 */
-function DraftRow({ initial = { name: '', team: '', track: '' }, placeholder = {}, onCancel, onConfirm }) {
+function DraftRow({ initial = { name: '', team: '', track: '', mentor: '' }, placeholder = {}, onCancel, onConfirm }) {
   const [value, setValue] = useState(initial)
   const [saving, setSaving] = useState(false)
 
@@ -142,7 +144,12 @@ function DraftRow({ initial = { name: '', team: '', track: '' }, placeholder = {
     if (!value.name.trim()) return
     setSaving(true)
     try {
-      await onConfirm({ name: value.name.trim(), team: value.team.trim(), track: value.track.trim() })
+      await onConfirm({
+        name: value.name.trim(),
+        team: value.team.trim(),
+        track: value.track.trim(),
+        mentor: (value.mentor || '').trim(),
+      })
     } finally {
       setSaving(false)
     }
@@ -182,6 +189,18 @@ function DraftRow({ initial = { name: '', team: '', track: '' }, placeholder = {
           value={value.track}
           placeholder={placeholder.track || '赛道'}
           onChange={(e) => setValue((v) => ({ ...v, track: e.target.value }))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') confirm()
+            if (e.key === 'Escape') onCancel()
+          }}
+        />
+      </td>
+      <td>
+        <input
+          className="input py-1.5"
+          value={value.mentor || ''}
+          placeholder={placeholder.mentor || '导师姓名'}
+          onChange={(e) => setValue((v) => ({ ...v, mentor: e.target.value }))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') confirm()
             if (e.key === 'Escape') onCancel()

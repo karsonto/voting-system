@@ -11,6 +11,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -33,6 +34,11 @@ public class GlobalExceptionHandler {
         FieldError first = ex.getBindingResult().getFieldError();
         String message = first == null ? "参数校验失败" : first.getField() + " " + first.getDefaultMessage();
         return build(HttpStatus.BAD_REQUEST, message);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleTooLarge(MaxUploadSizeExceededException ex) {
+        return build(HttpStatus.BAD_REQUEST, "头像不能超过 2MB");
     }
 
     @ExceptionHandler({HttpMessageNotReadableException.class, MissingServletRequestParameterException.class})

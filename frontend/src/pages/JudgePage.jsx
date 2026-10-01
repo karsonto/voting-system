@@ -3,7 +3,7 @@ import { authApi, judgeApi, publicApi, storage } from '../lib/api.js'
 import { useJudgeSession, useDraftStorage } from '../hooks/useJudgeSession.js'
 import { Toast, useToast } from '../components/Toast.jsx'
 import { Pill } from '../components/ui.jsx'
-import { clampScore, formatScore1, initial, percent } from '../lib/format.js'
+import { clampScore, formatScore1, initial } from '../lib/format.js'
 import { joinText, pad2 } from '../lib/format.js'
 
 /**
@@ -14,6 +14,17 @@ import { joinText, pad2 } from '../lib/format.js'
 export function JudgePage() {
   const [hasToken, setHasToken] = useState(() => !!storage.getJudgeToken())
   const { message, show } = useToast(2400)
+
+  // 评委端是独立全屏页，锁住文档滚动，避免 iPad / 桌面出现页面滚动条
+  useEffect(() => {
+    const previous = document.body.style.overflow
+    document.documentElement.style.overflow = 'hidden'
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.documentElement.style.overflow = ''
+      document.body.style.overflow = previous
+    }
+  }, [])
 
   if (!hasToken) {
     return (
@@ -100,7 +111,7 @@ function JudgeLogin({ onSuccess }) {
 
   if (loadingJudges) {
     return (
-      <div className="grid min-h-[calc(100vh-140px)] place-items-center px-4">
+      <div className="grid h-dvh place-items-center px-4">
         <div className="h-40 w-full max-w-[440px] animate-pulse rounded-lg bg-ink/10" />
       </div>
     )
@@ -108,7 +119,7 @@ function JudgeLogin({ onSuccess }) {
 
   if (judges.length === 0) {
     return (
-      <div className="mx-auto max-w-[520px] px-4 py-16">
+      <div className="mx-auto grid h-dvh max-w-[520px] place-items-center px-4">
         <div className="panel p-8 text-center">
           <h2 className="text-lg font-semibold">暂无可用评委</h2>
           <p className="hint mt-2">
@@ -120,7 +131,7 @@ function JudgeLogin({ onSuccess }) {
   }
 
   return (
-    <div className="grid min-h-[calc(100vh-140px)] place-items-center px-4 py-12">
+    <div className="grid h-dvh place-items-center px-4">
       <div className="w-full max-w-[440px] rounded-lg border border-line bg-surface p-8 shadow-card">
         <div className="mb-5 flex items-center gap-2.5">
           <span className="grid h-7 w-7 place-items-center rounded-[7px] border border-ink font-mono text-[13px] font-bold">
@@ -183,9 +194,8 @@ function ScoringConsole({ onLogout, toast }) {
   const { read, write, clear } = useDraftStorage(judge?.id ?? profile?.judgeId)
 
   const [formValues, setFormValues] = useState({})
-  const [comment, setComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const [switchNotice, setSwitchNotice] = useState(null)
+  const [historyId, setHistoryId] = useState(null)
 
   // 记录上一轮的项目 ID，用于判断「是否被调度切换」
   const lastProjectIdRef = useRef(null)
@@ -213,23 +223,14 @@ function ScoringConsole({ onLogout, toast }) {
       else next[dimension.id] = Math.round(maxScore * 0.8) // 与设计稿一致：默认 80% 分值
     })
     setFormValues(next)
-    setComment(draft?.comment ?? score?.comment ?? '')
 
     if (switched && currentProject) {
-      setSwitchNotice(currentProject.name)
       toast(`已切换评审项目：${currentProject.name}`)
     }
     seenOnceRef.current = true
     // 仅在项目 ID 或维度结构变化时重载，避免每次轮询都覆盖用户正在输入的分数
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProjectId, dimensions.map((d) => d.id).join(',')])
-
-  // 首次进入时用已有评分初始化（不覆盖草稿）
-  useEffect(() => {
-    if (!currentProjectId || !existingScore) return
-    setComment((prev) => (prev ? prev : existingScore.comment || ''))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [existingScore?.id])
 
   const weightedTotal = useMemo(() => {
     let weighted = 0
@@ -252,14 +253,9 @@ function ScoringConsole({ onLogout, toast }) {
     const value = clampScore(rawValue, maxScore)
     setFormValues((previous) => {
       const next = { ...previous, [dimensionId]: value }
-      if (currentProjectId) write(currentProjectId, { values: next, comment })
+      if (currentProjectId) write(currentProjectId, { values: next })
       return next
     })
-  }
-
-  function updateComment(value) {
-    setComment(value)
-    if (currentProjectId) write(currentProjectId, { values: formValues, comment: value })
   }
 
   async function handleSubmit() {
@@ -273,7 +269,7 @@ function ScoringConsole({ onLogout, toast }) {
     }
     setSubmitting(true)
     try {
-      const result = await judgeApi.submit(currentProjectId, formValues, comment.trim())
+      const result = await judgeApi.submit(currentProjectId, formValues, '')
       clear(currentProjectId)
       await reload()
       toast(`已提交「${currentProject.name}」评分：${formatScore1(result?.weightedTotal)} 分`)
@@ -297,8 +293,8 @@ function ScoringConsole({ onLogout, toast }) {
 
   if (error && !session) {
     return (
-      <div className="mx-auto max-w-[560px] px-4 py-16">
-        <div className="panel border-danger-ink/30 p-6">
+      <div className="grid h-dvh place-items-center px-4">
+        <div className="panel max-w-[560px] border-danger-ink/30 p-6">
           <h2 className="text-lg font-semibold text-danger-ink">无法加载评分台</h2>
           <p className="hint mt-2">{error.message}</p>
           <button type="button" className="btn btn-secondary btn-sm mt-4" onClick={onLogout}>
@@ -311,231 +307,211 @@ function ScoringConsole({ onLogout, toast }) {
 
   const name = judge?.name ?? profile?.name ?? '评委'
   const myScores = session?.myScores ?? {}
+  const projects = session?.projects ?? []
   const submittedCount = Object.keys(myScores).length
-  const projectCount = session?.projects?.length ?? 0
+  const projectCount = projects.length
   const open = competition?.open
+  const scoredProjects = projects.filter((project) => myScores[project.id])
+  const activeHistoryId = scoredProjects.some((project) => sameId(project.id, historyId))
+    ? historyId
+    : scoredProjects.some((project) => sameId(project.id, currentProjectId))
+      ? currentProjectId
+      : (scoredProjects[scoredProjects.length - 1]?.id ?? null)
+  const historyProject = projects.find((project) => sameId(project.id, activeHistoryId))
+  const historyBreakdown = breakdownOf(activeHistoryId ? myScores[activeHistoryId] : null, dimensions)
 
   return (
-    <div>
-      <header className="sticky top-[57px] z-10 border-b border-line bg-canvas/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1160px] items-center justify-between gap-4 px-7 py-3 max-md:px-4">
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-ink/[0.06] font-mono text-sm font-bold">
-              {initial(name)}
+    <div className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-canvas">
+      <div className="flex h-11 shrink-0 items-center justify-between gap-3 border-b border-line px-4">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink/[0.06] font-mono text-xs font-bold">
+            {initial(name)}
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-[13px] font-semibold leading-tight">{name}</span>
+            <span className="block truncate font-mono text-[11px] text-ink-muted">
+              {judge?.org || profile?.org || '—'}
             </span>
-            <span>
-              <span className="block text-sm font-semibold leading-tight">{name}</span>
-              <span className="block font-mono text-[11.5px] text-ink-muted">{judge?.org || profile?.org || '—'}</span>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Pill tone={open ? 'info' : 'warn'} live={open}>
-              {open ? '已连接调度台' : '通道已暂停'}
-            </Pill>
-            <button type="button" className="btn btn-ghost" onClick={handleLogout}>
-              退出
-            </button>
-          </div>
+          </span>
         </div>
-      </header>
 
-      <div className="mx-auto max-w-[1160px] px-7 py-7 max-md:px-4">
-        <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
-          {/* 左栏：打分 */}
-          <div>
-            <div className="mb-3.5 flex flex-col gap-2.5">
-              {switchNotice && (
-                <div className="flex items-center gap-2.5 rounded bg-info-soft px-3.5 py-2.5 text-[13px] text-info-ink animate-rise-in">
-                  <span className="dot" />
-                  <span>主持人已把你切换到「{switchNotice}」，可开始评分</span>
-                  <button
-                    type="button"
-                    className="ml-auto text-[12px] underline-offset-2 hover:underline"
-                    onClick={() => setSwitchNotice(null)}
-                  >
-                    知道了
-                  </button>
-                </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <Pill tone={open ? 'info' : 'warn'} live={open}>
+            {open ? '已连接' : '通道已暂停'}
+          </Pill>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={handleLogout}>
+            退出
+          </button>
+        </div>
+      </div>
+
+      <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-1 gap-3 p-3 md:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.9fr)]">
+        <section className="flex min-h-0 flex-col gap-3">
+          <div className="panel shrink-0 px-4 py-3">
+            <div className="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">
+              当前评审项目
+            </div>
+            <h1 className="mt-1 truncate text-[clamp(20px,2.4vw,28px)] font-semibold leading-tight tracking-[-0.025em]">
+              {currentProject?.name || '暂未分配评审项目'}
+            </h1>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Pill tone="idle">{currentProject?.team || '—'}</Pill>
+              <Pill tone="idle">{currentProject?.track || '—'}</Pill>
+              {currentProject && (
+                <Pill tone="info">
+                  {pad2(projects.findIndex((project) => sameId(project.id, currentProject.id)) + 1)} / {pad2(projectCount)}
+                </Pill>
               )}
-
-              {!open && (
-                <div className="flex items-center gap-2.5 rounded bg-warn-soft px-3.5 py-3 text-[13px] text-warn-ink">
-                  <span>评分通道已暂停，请联系组委会开启后再提交。</span>
-                </div>
-              )}
-            </div>
-
-            <div className="panel relative overflow-hidden p-6">
-              <div className="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">
-                当前评审项目 · 由组委会实时调度
-              </div>
-              <h1 className="mt-2 text-[clamp(24px,3vw,34px)] font-semibold leading-tight tracking-[-0.025em]">
-                {currentProject?.name || '暂未分配评审项目'}
-              </h1>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <Pill tone="idle">{currentProject?.team || '—'}</Pill>
-                <Pill tone="idle">{currentProject?.track || '—'}</Pill>
-                {currentProject && (
-                  <Pill tone="info">
-                    项目{' '}
-                    {pad2((session?.projects?.findIndex((p) => p.id === currentProject.id) ?? 0) + 1)} /{' '}
-                    {pad2(projectCount)}
-                  </Pill>
-                )}
-              </div>
-            </div>
-
-            <div className="panel mt-5">
-              <div className="panel-head">
-                <span className="panel-title">多维度打分</span>
-                <span className="meta">
-                  每维度 0–{maxScore} 分 · 权重合计 {weightSum}%
-                </span>
-              </div>
-              <div className="panel-body pt-1">
-                {dimensions.length === 0 ? (
-                  <p className="hint py-6 text-center">组委会还没有配置评分维度。</p>
-                ) : (
-                  dimensions.map((dimension) => (
-                    <DimensionControl
-                      key={dimension.id}
-                      dimension={dimension}
-                      max={maxScore}
-                      value={formValues[dimension.id]}
-                      disabled={!currentProjectId}
-                      onChange={(value) => updateValue(dimension.id, value)}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div className="panel mt-5">
-              <div className="panel-head">
-                <span className="panel-title">评语（选填）</span>
-              </div>
-              <div className="panel-body">
-                <textarea
-                  className="textarea resize-y leading-relaxed"
-                  rows={3}
-                  placeholder="给选手的一句话点评，将随评分一并存档"
-                  value={comment}
-                  maxLength={500}
-                  onChange={(e) => updateComment(e.target.value)}
-                />
-              </div>
             </div>
           </div>
 
-          {/* 右栏：总分与进度 */}
-          <div className="flex flex-col gap-5">
-            <div className="panel">
-              <div className="panel-head">
-                <span className="panel-title">加权总分</span>
-                <span className="meta">{existingScore ? '已提交（可更新）' : '未提交'}</span>
+          <div className="panel flex min-h-0 flex-1 flex-col">
+            <div className="panel-head shrink-0 py-2.5">
+              <span className="panel-title">多维度打分</span>
+              <span className="meta">
+                0–{maxScore} · 权重 {weightSum}%
+              </span>
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col justify-evenly px-4 py-1">
+              {dimensions.length === 0 ? (
+                <p className="hint text-center">组委会还没有配置评分维度。</p>
+              ) : (
+                dimensions.map((dimension) => (
+                  <DimensionControl
+                    key={dimension.id}
+                    dimension={dimension}
+                    max={maxScore}
+                    value={formValues[dimension.id]}
+                    disabled={!currentProjectId}
+                    onChange={(value) => updateValue(dimension.id, value)}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        </section>
+
+        <aside className="flex min-h-0 flex-col gap-3">
+          <div className="panel shrink-0">
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+              <div className="min-w-0">
+                <div className="font-mono text-[11px] text-ink-muted">加权总分</div>
+                <div className="font-mono text-[32px] font-semibold leading-none tracking-[-0.03em] tnum">
+                  {formatScore1(weightedTotal)}
+                  <span className="ml-1 text-[13px] font-medium text-ink-muted">分</span>
+                </div>
               </div>
-              <div className="panel-body">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <div className="font-mono text-[40px] font-semibold leading-none tracking-[-0.03em] tnum">
-                      {formatScore1(weightedTotal)}
-                      <span className="ml-1 text-[14px] font-medium text-ink-muted">分</span>
-                    </div>
-                    <p className="hint mt-1.5">
-                      {dimensions.length} 个维度加权折算 · 权重合计 {weightSum}%
-                    </p>
+              <button
+                type="button"
+                className="btn btn-primary shrink-0"
+                onClick={handleSubmit}
+                disabled={submitting || !open || !currentProjectId || !allScored}
+              >
+                {submitting ? '提交中…' : existingScore ? '更新评分' : '提交评分'}
+              </button>
+            </div>
+          </div>
+
+          <div className="panel flex min-h-0 flex-1 flex-col">
+            <div className="panel-head shrink-0 py-2.5">
+              <span className="panel-title">我的评分进度</span>
+              <span className="meta">
+                {submittedCount} / {projectCount}
+              </span>
+            </div>
+
+            <div className="shrink-0 border-b border-line px-3 py-2">
+              {historyProject ? (
+                <>
+                  <div className="truncate text-[12.5px] font-medium" title={historyProject.name}>
+                    {historyProject.name}
+                    <span className="ml-2 font-normal text-ink-muted">维度分数</span>
                   </div>
-                </div>
-
-                <button
-                  type="button"
-                  className="btn btn-primary btn-block mt-5"
-                  onClick={handleSubmit}
-                  disabled={submitting || !open || !currentProjectId || !allScored}
-                >
-                  {submitting ? '提交中…' : existingScore ? '更新评分' : '提交评分'}
-                </button>
-
-                <p className="hint mt-2.5">
-                  {!currentProjectId
-                    ? '等待组委会把你调度到某个项目。'
-                    : !open
-                      ? '评分通道已暂停，暂时无法提交。'
-                      : existingScore
-                        ? '重复提交会覆盖此前的分数，直到通道关闭。'
-                        : '提交后仍可返回修改，直到通道关闭。'}
-                </p>
-              </div>
+                  <div className="mt-1.5 flex max-h-12 flex-wrap gap-1.5 overflow-hidden">
+                    {historyBreakdown.length === 0 ? (
+                      <span className="hint">这份评分没有维度明细。</span>
+                    ) : (
+                      historyBreakdown.map((row) => (
+                        <span key={row.id} className="pill pill-idle">
+                          {row.name} {row.value}
+                        </span>
+                      ))
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="hint">提交后点选项目，可回看各维度分数。</p>
+              )}
             </div>
 
-            <div className="panel">
-              <div className="panel-head">
-                <span className="panel-title">我的评分进度</span>
-                <span className="meta">
-                  {submittedCount} / {projectCount} 已提交
-                </span>
-              </div>
-              <div className="panel-body pt-1">
-                {(session?.projects ?? []).map((project) => {
-                  const score = myScores[project.id]
-                  const isCurrent = project.id === currentProjectId
-                  return (
-                    <div
-                      key={project.id}
-                      className="flex items-center justify-between gap-3 border-b border-line py-2.5 last:border-b-0"
-                    >
-                      <span
-                        className={`truncate text-[13px] ${isCurrent ? 'font-semibold' : ''}`}
-                        title={project.name}
-                      >
-                        {project.name}
-                      </span>
-                      <Pill tone={score ? 'ok' : 'idle'}>
-                        {score ? `${formatScore1(score.weightedTotal)} 分` : '待评'}
-                      </Pill>
-                    </div>
-                  )
-                })}
-
-                {projectCount === 0 && <p className="hint py-4 text-center">还没有参赛项目。</p>}
-              </div>
-            </div>
-
-            <div className="panel">
-              <div className="panel-head">
-                <span className="panel-title">计分规则</span>
-              </div>
-              <div className="panel-body flex flex-col gap-2.5">
-                <p className="hint">
-                  现行计分规则：{competition?.ruleLabel || '—'}（{competition?.ruleDescription || '—'}）。
-                </p>
-                <p className="hint">你的这一份评分将与其他评委的评分一起，按上述规则计算项目最终成绩。</p>
-                <p className="hint">
-                  当前该项目已有 {percent(currentProject?.submittedCount ?? 0, projectCount)}% 的评委提交
-                  （{currentProject?.submittedCount ?? 0} / {projectCount} 位）。
-                </p>
-              </div>
+            <div className="flex min-h-0 flex-1 flex-col justify-evenly overflow-hidden px-2 py-1">
+              {projectCount === 0 && <p className="hint px-2 text-center">还没有参赛项目。</p>}
+              {projects.map((project) => {
+                const score = myScores[project.id]
+                const isCurrent = sameId(project.id, currentProjectId)
+                const selected = sameId(project.id, activeHistoryId)
+                return (
+                  <button
+                    key={project.id}
+                    type="button"
+                    disabled={!score}
+                    onClick={() => setHistoryId(project.id)}
+                    className={`flex min-h-0 items-center justify-between gap-2 rounded px-2 py-1 text-left disabled:cursor-default ${
+                      selected ? 'bg-info-soft' : 'hover:bg-ink/[0.03]'
+                    }`}
+                  >
+                    <span className={`min-w-0 truncate text-[13px] ${isCurrent ? 'font-semibold' : ''}`}>
+                      {isCurrent ? '当前 · ' : ''}
+                      {project.name}
+                    </span>
+                    <Pill tone={score ? 'ok' : 'idle'}>
+                      {score ? `${formatScore1(score.weightedTotal)}` : '待评'}
+                    </Pill>
+                  </button>
+                )
+              })}
             </div>
           </div>
-        </div>
+        </aside>
       </div>
     </div>
   )
 }
 
-/** 单个维度的滑杆 + 数值输入。 */
+/** 把一份已提交评分展开成「维度名 → 分数」，供进度区回看。 */
+function breakdownOf(score, dimensions) {
+  if (!score?.values) return []
+  const used = new Set()
+  const rows = []
+  dimensions.forEach((dimension) => {
+    const value = score.values[dimension.id] ?? score.values[String(dimension.id)]
+    used.add(String(dimension.id))
+    if (value === undefined || value === null) return
+    rows.push({ id: dimension.id, name: dimension.name, value })
+  })
+  Object.entries(score.values).forEach(([id, value]) => {
+    if (used.has(String(id)) || value === undefined || value === null) return
+    rows.push({ id, name: `维度 ${id}`, value })
+  })
+  return rows
+}
+
+function sameId(left, right) {
+  return left != null && right != null && String(left) === String(right)
+}
+
+/** 单个维度的滑杆 + 数值输入。行高随剩余空间收缩，保证整页不出现滚动条。 */
 function DimensionControl({ dimension, value, max, disabled, onChange }) {
   const safeValue = typeof value === 'number' ? value : Math.round(max * 0.8)
 
   return (
-    <div className="border-b border-line py-4 last:border-b-0">
-      <div className="mb-2.5 flex items-baseline justify-between gap-3">
-        <span className="text-[14.5px] font-medium">{dimension.name}</span>
-        <span className="font-mono text-xs text-ink-muted">权重 {dimension.weight}%</span>
+    <div className="min-h-0 py-1">
+      <div className="mb-1 flex items-baseline justify-between gap-3">
+        <span className="truncate text-[13.5px] font-medium">{dimension.name}</span>
+        <span className="shrink-0 font-mono text-[11px] text-ink-muted">权重 {dimension.weight}%</span>
       </div>
 
-      <div className="grid grid-cols-[1fr_78px] items-center gap-3.5">
+      <div className="grid grid-cols-[1fr_64px] items-center gap-2.5">
         <input
           type="range"
           min={0}
@@ -544,11 +520,11 @@ function DimensionControl({ dimension, value, max, disabled, onChange }) {
           value={safeValue}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          className="h-6 w-full cursor-pointer accent-brand-600"
+          className="h-5 w-full cursor-pointer accent-brand-600"
           aria-label={`${dimension.name} 得分`}
         />
         <input
-          className="input input-num text-center"
+          className="input input-num px-1 py-1 text-center"
           type="number"
           min={0}
           max={max}
@@ -564,11 +540,9 @@ function DimensionControl({ dimension, value, max, disabled, onChange }) {
 
 function ConsoleSkeleton() {
   return (
-    <div className="mx-auto max-w-[1160px] px-7 py-7 max-md:px-4">
-      <div className="grid gap-5 lg:grid-cols-[1.55fr_1fr]">
-        <div className="h-80 animate-pulse rounded-lg bg-ink/10" />
-        <div className="h-60 animate-pulse rounded-lg bg-ink/10" />
-      </div>
+    <div className="grid h-dvh grid-cols-1 gap-3 p-3 md:grid-cols-[1.4fr_0.9fr]">
+      <div className="animate-pulse rounded-lg bg-ink/10" />
+      <div className="animate-pulse rounded-lg bg-ink/10" />
     </div>
   )
 }

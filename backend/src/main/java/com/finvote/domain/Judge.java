@@ -19,4 +19,6 @@ public class Judge {
     private Long currentProjectId;
     private int sortOrder;
     private boolean active;
+    /** 头像文件名，空字符串表示未上传。 */
+    private String avatar;
 }

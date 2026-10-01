@@ -17,6 +17,7 @@ import com.finvote.repository.ProjectRepository;
 import com.finvote.repository.ScoreRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,17 +39,20 @@ public class AdminService {
     private final ProjectRepository projectRepository;
     private final JudgeRepository judgeRepository;
     private final ScoreRepository scoreRepository;
+    private final AvatarStorage avatarStorage;
 
     public AdminService(CompetitionService competitionService,
                         DimensionRepository dimensionRepository,
                         ProjectRepository projectRepository,
                         JudgeRepository judgeRepository,
-                        ScoreRepository scoreRepository) {
+                        ScoreRepository scoreRepository,
+                        AvatarStorage avatarStorage) {
         this.competitionService = competitionService;
         this.dimensionRepository = dimensionRepository;
         this.projectRepository = projectRepository;
         this.judgeRepository = judgeRepository;
         this.scoreRepository = scoreRepository;
+        this.avatarStorage = avatarStorage;
     }
 
     // ---------------------------------------------------------------- 赛制
@@ -152,6 +156,7 @@ public class AdminService {
         project.setName(request.getName().trim());
         project.setTeam(safe(request.getTeam()));
         project.setTrack(safe(request.getTrack()));
+        project.setMentor(safe(request.getMentor()));
         project.setSortOrder(projectRepository.maxSortOrder(competition.getId()) + 1);
         Long id = projectRepository.insert(project);
 
@@ -163,7 +168,8 @@ public class AdminService {
     @Transactional
     public void updateProject(Long id, ProjectRequest request) {
         requireProject(id);
-        projectRepository.update(id, request.getName().trim(), safe(request.getTeam()), safe(request.getTrack()), null);
+        projectRepository.update(id, request.getName().trim(), safe(request.getTeam()),
+                safe(request.getTrack()), safe(request.getMentor()), null);
         competitionService.touch();
     }
 
@@ -205,9 +211,19 @@ public class AdminService {
 
     @Transactional
     public void deleteJudge(Long id) {
-        requireJudge(id);
+        Judge judge = requireJudge(id);
+        avatarStorage.delete(judge.getAvatar());
         judgeRepository.delete(id);
         competitionService.touch();
+    }
+
+    @Transactional
+    public String saveAvatar(Long id, MultipartFile file) {
+        requireJudge(id);
+        String filename = avatarStorage.store(id, file);
+        judgeRepository.updateAvatar(id, filename);
+        competitionService.touch();
+        return "/avatars/" + filename;
     }
 
     // ---------------------------------------------------------------- 调度
@@ -291,6 +307,7 @@ public class AdminService {
                 project.setName("待命名项目 " + (projects.size() + 1));
                 project.setTeam("待填写团队");
                 project.setTrack("待定赛道");
+                project.setMentor("");
                 project.setSortOrder(projectRepository.maxSortOrder(competition.getId()) + 1);
                 project.setId(projectRepository.insert(project));
                 projects.add(project);
@@ -319,6 +336,7 @@ public class AdminService {
             }
             while (judges.size() > target) {
                 Judge removed = judges.remove(judges.size() - 1);
+                avatarStorage.delete(removed.getAvatar());
                 judgeRepository.delete(removed.getId());
             }
             assignUnassignedJudges(competition.getId(), defaultProject);
@@ -346,6 +364,9 @@ public class AdminService {
         Competition competition = competitionService.current();
         Long id = competition.getId();
         scoreRepository.deleteAll(id);
+        for (Judge judge : judgeRepository.findByCompetition(id)) {
+            avatarStorage.delete(judge.getAvatar());
+        }
         judgeRepository.deleteAll(id);
         projectRepository.deleteAll(id);
         dimensionRepository.deleteAll(id);

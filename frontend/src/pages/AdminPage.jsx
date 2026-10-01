@@ -19,7 +19,7 @@ const TABS = [
   { id: 'setup', label: '赛制配置' },
   { id: 'roster', label: '项目与评委' },
   { id: 'dispatch', label: '实时调度' },
-  { id: 'stage', label: '揭晓与导出' },
+  { id: 'stage', label: '导出与清空结果' },
 ]
 
 /**
@@ -110,6 +110,8 @@ export function AdminPage() {
 
   const handleUpdateJudge = (id, payload) => run(() => adminApi.updateJudge(id, payload), '评委已更新')
 
+  const handleUploadAvatar = (id, file) => run(() => adminApi.uploadAvatar(id, file), '头像已更新')
+
   const handleDeleteJudge = async (judge) => {
     const confirmed = window.confirm(`确定删除评委「${judge.name}」吗？\n该评委的全部评分会被删除，此操作不可撤销。`)
     if (!confirmed) return
@@ -152,9 +154,6 @@ export function AdminPage() {
   const handleToggleOpen = (open) =>
     run(() => adminApi.updateSwitches({ open }), open ? '评分通道已开启' : '评分通道已关闭')
 
-  const handleToggleReveal = (revealed) =>
-    run(() => adminApi.updateSwitches({ revealed }), revealed ? '大屏已揭晓结果' : '大屏已隐藏分数')
-
   const handleExport = async (kind) => {
     setBusy(true)
     try {
@@ -169,10 +168,10 @@ export function AdminPage() {
 
   const handleClearScores = async () => {
     const confirmed = window.confirm(
-      `确定清空全部 ${stats?.scoreCount ?? 0} 份评分吗？\n项目、评委与维度配置会保留，此操作不可撤销。`,
+      `确定清空全部 ${stats?.scoreCount ?? 0} 份评分结果吗？\n项目、评委、维度和调度都会保留，评委需要重新打分。此操作不可撤销。`,
     )
     if (!confirmed) return
-    await run(() => adminApi.clearAllScores(), '评分已全部清空')
+    await run(() => adminApi.clearAllScores(), '评分结果已清空，可以重新打分')
   }
 
   const handleReset = async () => {
@@ -221,7 +220,7 @@ export function AdminPage() {
     setup: `${dimensions.length} 维度`,
     roster: `${projects.length}/${judges.length}`,
     dispatch: `${projects.filter((p) => p.submittedCount > 0).length} 项有分`,
-    stage: competition?.revealed ? '已揭晓' : '未揭晓',
+    stage: `${stats?.scoreCount ?? 0} 份`,
   }
 
   return (
@@ -232,9 +231,9 @@ export function AdminPage() {
           <div className="panel p-3">
             <div className="flex items-center gap-2.5 px-2 pb-3.5">
               <span className="grid h-6 w-6 place-items-center rounded-md border border-ink font-mono text-xs font-bold">
-                FV
+                A
               </span>
-              <span className="text-[15px] font-semibold">FinVote 后台</span>
+              <span className="text-[15px] font-semibold">Athlon 评分系统</span>
             </div>
 
             <div className="mb-3.5 rounded border border-line px-3 py-2.5">
@@ -277,7 +276,7 @@ export function AdminPage() {
           {usingDefaultPassword() && (
             <div className="rounded-lg border border-danger-ink/30 bg-danger-soft px-3.5 py-3">
               <p className="text-[12.5px] text-danger-ink">
-                管理员仍在使用默认密码，请到「揭晓与导出 → 管理员密码」处修改。
+                管理员仍在使用默认密码，请到「导出与清空结果 → 管理员密码」处修改。
               </p>
             </div>
           )}
@@ -299,14 +298,6 @@ export function AdminPage() {
               <Pill tone={competition?.open ? 'ok' : 'warn'} live={competition?.open}>
                 {competition?.open ? '评分开放中' : '评分已关闭'}
               </Pill>
-              <button
-                type="button"
-                className={competition?.open ? 'btn btn-secondary btn-sm' : 'btn btn-primary btn-sm'}
-                onClick={() => handleToggleOpen(!competition?.open)}
-                disabled={busy}
-              >
-                {competition?.open ? '关闭评分' : '开启评分'}
-              </button>
             </div>
           </header>
 
@@ -363,6 +354,7 @@ export function AdminPage() {
                 onAdd={handleAddJudge}
                 onUpdate={handleUpdateJudge}
                 onDelete={handleDeleteJudge}
+                onUploadAvatar={handleUploadAvatar}
                 onRandomPin={handleRandomPin}
                 busy={busy}
               />
@@ -371,10 +363,12 @@ export function AdminPage() {
 
           {tab === 'dispatch' && (
             <DispatchPanel
+              competition={competition}
               judges={judges}
               projects={projects}
               currentProjectId={resolveCurrentProjectId(judges)}
               judgesAligned={isAligned(judges)}
+              onToggleOpen={handleToggleOpen}
               onDispatchAll={handleDispatchAll}
               onDispatchOne={handleDispatchOne}
               onNext={handleDispatchNext}
@@ -385,11 +379,8 @@ export function AdminPage() {
 
           {tab === 'stage' && (
             <StagePanel
-              competition={competition}
               stats={stats}
               usingDefaultPassword={usingDefaultPassword()}
-              onToggleOpen={handleToggleOpen}
-              onToggleReveal={handleToggleReveal}
               onExport={handleExport}
               onClearScores={handleClearScores}
               onReset={handleReset}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>后台配置台 · FinVote 评赛系统</title>
+<title>后台配置台 · Athlon 评分系统</title>
 <style>
   :root{
     --bg:      oklch(97.6% 0.010 258);
@@ -182,7 +182,7 @@
   <aside class="sidebar" data-od-id="admin-sidebar">
     <div class="sb-brand">
       <span class="mark" aria-hidden="true">FV</span>
-      <span class="name">FinVote 后台</span>
+      <span class="name">Athlon 评分系统</span>
     </div>
     <div class="sb-comp">
       <div class="sb-label">当前赛事</div>
@@ -686,14 +686,14 @@
         rows.push(line.map(csvCell).join(','));
       });
     });
-    download('FinVote_评分明细.csv',rows.join('\r\n'));toast('评分明细已导出');
+    download('Athlon_评分明细.csv',rows.join('\r\n'));toast('评分明细已导出');
   });
   document.getElementById('btn-csv-rank').addEventListener('click',function(){
     var rows=[['排名','项目','团队','有效评委数','最终得分'].join(',')];
     board().forEach(function(r,i){
       rows.push([i+1,r.project.name,r.project.team,r.trim.effective,(r.trim.mean==null?'':r.trim.mean.toFixed(2))].map(csvCell).join(','));
     });
-    download('FinVote_项目排名.csv',rows.join('\r\n'));toast('项目排名已导出');
+    download('Athlon_项目排名.csv',rows.join('\r\n'));toast('项目排名已导出');
   });
   function csvCell(v){v=String(v==null?'':v);return /[",\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
   function weighted(dims,vals){var t=0,w=0;dims.forEach(function(d){w+=d.weight;var v=vals?vals[d.id]:null;if(typeof v==='number'&&!isNaN(v))t+=v*d.weight;});return w?t/w:0;}

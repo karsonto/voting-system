@@ -9,10 +9,12 @@ import { pad2, percent } from '../../lib/format.js'
  * 单点调整（个别评委补评上一项）放在下面的表格里。
  */
 export function DispatchPanel({
+  competition,
   judges,
   projects,
   currentProjectId,
   judgesAligned,
+  onToggleOpen,
   onDispatchAll,
   onDispatchOne,
   onNext,
@@ -25,22 +27,45 @@ export function DispatchPanel({
 
   const currentProject = projects.find((p) => p.id === currentProjectId)
 
-  if (projects.length === 0) {
-    return (
-      <div className="panel">
-        <div className="panel-head">
-          <span className="panel-title">实时调度</span>
-        </div>
-        <EmptyState
-          title="还没有参赛项目"
-          description="先在「项目与评委」中录入项目，然后才能把评委调度过去。"
-        />
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-col gap-5">
+      <div className="panel">
+        <div className="panel-head">
+          <span className="panel-title">评分通道</span>
+          <Pill tone={competition?.open ? 'ok' : 'warn'} live={!!competition?.open}>
+            {competition?.open ? '评分通道开放' : '评分通道关闭'}
+          </Pill>
+        </div>
+        <div className="panel-body flex flex-col gap-3">
+          <label className="switch">
+            <input
+              type="checkbox"
+              className="sr-only"
+              checked={!!competition?.open}
+              disabled={busy}
+              onChange={(e) => onToggleOpen(e.target.checked)}
+            />
+            <span className="switch-track" aria-hidden="true" />
+            <span className="text-[13.5px]">
+              <strong>开启评分</strong> — 打开后评委才能提交分数，关闭后暂停提交
+            </span>
+          </label>
+          <p className="hint">已提交的分数会保留。通道关闭时，评委端不能再提交或修改评分。</p>
+        </div>
+      </div>
+
+      {projects.length === 0 ? (
+        <div className="panel">
+          <div className="panel-head">
+            <span className="panel-title">实时调度</span>
+          </div>
+          <EmptyState
+            title="还没有参赛项目"
+            description="先在「项目与评委」中录入项目，然后才能把评委调度过去。"
+          />
+        </div>
+      ) : (
+        <>
       <div className="panel">
         <div className="panel-head">
           <span className="panel-title">批量切换到项目</span>
@@ -200,9 +225,12 @@ export function DispatchPanel({
             <p className="hint">
               4. 调度变化会在 1–2 秒内自动推送到评委端与总分大屏，现场无需手动刷新。
             </p>
+            <p className="hint">5. 评分通道开启后，评委才能提交评分。</p>
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }

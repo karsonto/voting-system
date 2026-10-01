@@ -14,4 +14,6 @@ public class JudgeView {
     private Long currentProjectId;
     private int sortOrder;
     private boolean active;
+    /** 头像访问路径，未上传时为 null。 */
+    private String avatar;
 }

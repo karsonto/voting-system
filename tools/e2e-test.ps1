@@ -1,4 +1,4 @@
-﻿# FinVote 端到端接口验证
+﻿# Athlon 评分系统端到端接口验证
 # 用法: powershell -ExecutionPolicy Bypass -File tools\e2e-test.ps1
 #       powershell -ExecutionPolicy Bypass -File tools\e2e-test.ps1 -Port 8081
 param(
@@ -171,16 +171,18 @@ try {
 } catch { $outOfRange = $true }
 Check '超出 0-100 的分数被拒绝' $outOfRange
 
-Write-Host "`n=== 9. 揭晓前分数必须隐藏 ===" -ForegroundColor Cyan
+Write-Host "`n=== 9. 公开大屏实时下发已评分项目的分数 ===" -ForegroundColor Cyan
 $pub = Send-Json GET '/api/public/state'
-Check '未揭晓时 masked=true' ($pub.board[0].masked -eq $true)
-Check '未揭晓时不下发 mean' ($null -eq $pub.board[0].mean) "got=$($pub.board[0].mean)"
-Check '未揭晓时不下发 highest' ($null -eq $pub.board[0].highest)
-Check '但会下发提交进度' ($pub.board[0].submittedCount -eq 1) "got=$($pub.board[0].submittedCount)"
+$pubA = $pub.board | Where-Object { $_.projectId -eq $projIds[0] }
+$pubB = $pub.board | Where-Object { $_.projectId -eq $projIds[1] }
+Check '已评分项目 masked=false' ($pubA.masked -eq $false)
+Check '已评分项目下发 mean' ($null -ne $pubA.mean) "got=$($pubA.mean)"
+Check '已评分项目下发 highest' ($null -ne $pubA.highest)
+Check '未评分项目没有 mean' ($null -eq $pubB.mean)
+Check '会下发提交进度' ($pubA.submittedCount -eq 1) "got=$($pubA.submittedCount)"
 $raw = Invoke-WebRequest -Uri "$Base/api/public/state" -UseBasicParsing
 $rawText = Get-ResponseText $raw
-Check '公开响应体内不含 mean 字段' ($rawText -notmatch '"mean":')
-Check '公开响应体内不含 weightedTotal 字段' ($rawText -notmatch '"weightedTotal"')
+Check '公开响应体不含逐条 weightedTotal' ($rawText -notmatch '"weightedTotal"')
 Check '统计口径：有效评委数 = 评委数 - 2' ($pub.stats.effectiveScoreCount -eq 1) "got=$($pub.stats.effectiveScoreCount)"
 
 Write-Host "`n=== 10. 去掉最高最低分 ===" -ForegroundColor Cyan
@@ -203,16 +205,23 @@ Check '去极值后得分 = 73.5' ([math]::Abs($rowA.mean - 73.5) -lt 0.01) "got
 Check '最高分记录为 100' ([math]::Abs($rowA.highest - 100) -lt 0.01) "got=$($rowA.highest)"
 Check '最低分记录为 60' ([math]::Abs($rowA.lowest - 60) -lt 0.01) "got=$($rowA.lowest)"
 
-Write-Host "`n=== 11. 揭晓（公开接口开始下发分数） ===" -ForegroundColor Cyan
+Write-Host "`n=== 11. 揭晓（已评分项目按分数排名） ===" -ForegroundColor Cyan
 $beforeReveal = Send-Json GET '/api/public/state'
-Check '揭晓前公开接口仍隐藏分数' ($null -eq $beforeReveal.board[0].mean)
+$beforeA = $beforeReveal.board | Where-Object { $_.projectId -eq $projIds[0] }
+Check '揭晓前公开接口已有分数' ($null -ne $beforeA.mean)
 
 Send-Json PUT '/api/admin/switches' @{ revealed = $true } -Token $admin | Out-Null
 $pub = Send-Json GET '/api/public/state'
-Check '揭晓后 masked=false' ($pub.board[0].masked -eq $false)
-Check '揭晓后下发 mean' ($null -ne $pub.board[0].mean) "got=$($pub.board[0].mean)"
-Check '揭晓后排名从 1 开始' ($pub.board[0].rank -eq 1)
-Check '分数降序排列' ($pub.board[0].mean -ge $pub.board[1].mean)
+$pubA = $pub.board | Where-Object { $_.projectId -eq $projIds[0] }
+Check '揭晓后 masked=false' ($pubA.masked -eq $false)
+Check '揭晓后下发 mean' ($null -ne $pubA.mean) "got=$($pubA.mean)"
+Check '已评分项目排名为 1' ($pubA.rank -eq 1)
+$scoredRows = @($pub.board | Where-Object { $null -ne $_.mean })
+$descending = $true
+for ($i = 1; $i -lt $scoredRows.Count; $i++) {
+    if ($scoredRows[$i - 1].mean -lt $scoredRows[$i].mean) { $descending = $false }
+}
+Check '已评分项目按分数降序' $descending
 
 Write-Host "`n=== 12. 切换计分规则 ===" -ForegroundColor Cyan
 Send-Json PUT '/api/admin/competition' @{ ruleId = 'mean' } -Token $admin | Out-Null

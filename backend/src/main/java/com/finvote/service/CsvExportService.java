@@ -56,7 +56,7 @@ public class CsvExportService {
         StringBuilder sb = new StringBuilder(BOM);
 
         List<String> header = new ArrayList<String>();
-        header.addAll(Arrays.asList("评委", "机构", "项目", "团队", "赛道"));
+        header.addAll(Arrays.asList("评委", "机构", "项目", "团队", "赛道", "导师"));
         for (Dimension d : dimensions) {
             header.add(d.getName() + "(" + d.getWeight() + "%)");
         }
@@ -74,6 +74,7 @@ public class CsvExportService {
             row.add(project == null ? "" : project.getName());
             row.add(project == null ? "" : project.getTeam());
             row.add(project == null ? "" : project.getTrack());
+            row.add(project == null ? "" : (project.getMentor() == null ? "" : project.getMentor()));
             for (Dimension d : dimensions) {
                 Integer value = values == null ? null : values.get(d.getId());
                 row.add(value == null ? "" : String.valueOf(value));
@@ -102,7 +103,7 @@ public class CsvExportService {
         List<BoardRowView> rows = stateAssembler.board(projects, judges, entries, competition.rule(), false);
 
         StringBuilder sb = new StringBuilder(BOM);
-        appendRow(sb, Arrays.asList("排名", "项目", "团队", "赛道", "已提交评委数", "评委总数",
+        appendRow(sb, Arrays.asList("排名", "项目", "团队", "赛道", "导师", "已提交评委数", "评委总数",
                 "有效评分份数", "最终得分", "最高分", "最低分", "计分规则"));
 
         for (BoardRowView row : rows) {
@@ -111,6 +112,7 @@ public class CsvExportService {
             line.add(row.getProjectName());
             line.add(row.getTeam());
             line.add(row.getTrack());
+            line.add(row.getMentor() == null ? "" : row.getMentor());
             line.add(String.valueOf(row.getSubmittedCount()));
             line.add(String.valueOf(row.getJudgeCount()));
             line.add(String.valueOf(row.getEffectiveCount()));

@@ -104,10 +104,10 @@ export class ApiError extends Error {
  * @param {object} options { method, body, role: 'ADMIN' | 'JUDGE' | null, signal }
  */
 async function request(path, options = {}) {
-  const { method = 'GET', body, role = null, signal, raw = false } = options
+  const { method = 'GET', body, formData, role = null, signal, raw = false } = options
   const headers = {}
 
-  if (body !== undefined) {
+  if (body !== undefined && formData === undefined) {
     headers['Content-Type'] = 'application/json'
   }
   if (role === 'ADMIN') {
@@ -124,7 +124,7 @@ async function request(path, options = {}) {
       method,
       headers,
       signal,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: formData !== undefined ? formData : body === undefined ? undefined : JSON.stringify(body),
     })
   } catch (error) {
     if (error.name === 'AbortError') throw error
@@ -216,6 +216,11 @@ export const adminApi = {
   addJudge: (payload) => request('/api/admin/judges', { method: 'POST', role: 'ADMIN', body: payload }),
   updateJudge: (id, payload) => request(`/api/admin/judges/${id}`, { method: 'PUT', role: 'ADMIN', body: payload }),
   deleteJudge: (id) => request(`/api/admin/judges/${id}`, { method: 'DELETE', role: 'ADMIN' }),
+  uploadAvatar: (id, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request(`/api/admin/judges/${id}/avatar`, { method: 'POST', role: 'ADMIN', formData })
+  },
   randomPin: () => request('/api/admin/judges/random-pin', { role: 'ADMIN' }),
 
   dispatch: (judgeIds, projectId) =>
@@ -251,7 +256,7 @@ export async function downloadExport(kind) {
   const blob = await response.blob()
 
   const filename =
-    kind === 'ranking' ? 'FinVote_项目排名.csv' : 'FinVote_评分明细.csv'
+    kind === 'ranking' ? 'Athlon_项目排名.csv' : 'Athlon_评分明细.csv'
   const url = window.URL.createObjectURL(blob)
   const anchor = document.createElement('a')
   anchor.href = url

@@ -9,7 +9,7 @@ const NAV = [
 /**
  * 通用布局：顶部导航 + 内容区。
  *
- * 大屏（/board）使用自己的全屏布局，不套用这里。
+ * 大屏（/board）与评委评分端（/judge）使用自己的全屏布局，不套用这里。
  */
 export function Layout() {
   const location = useLocation()
@@ -21,9 +21,9 @@ export function Layout() {
         <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-5 px-8 py-3.5 max-md:px-4">
           <NavLink to="/" className="flex items-center gap-2.5">
             <span className="grid h-[26px] w-[26px] place-items-center rounded-[7px] border border-ink font-mono text-[13px] font-bold">
-              FV
+              A
             </span>
-            <span className="text-[17px] font-semibold tracking-[-0.01em]">FinVote · 评赛系统</span>
+            <span className="text-[17px] font-semibold tracking-[-0.01em]">Athlon 评分系统</span>
           </NavLink>
 
           <nav className="flex items-center gap-6 max-md:hidden">
@@ -58,7 +58,7 @@ export function Layout() {
 
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-4 px-8 py-10 text-[13px] text-ink-muted max-md:px-4">
-          <span>FinVote · 演讲评赛组委会</span>
+          <span>Athlon 评分系统</span>
           <span className="meta">Java 8 · Spring Boot 2.7 · React · Tailwind · SQLite</span>
         </div>
       </footer>

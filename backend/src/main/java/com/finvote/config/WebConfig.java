@@ -2,6 +2,7 @@ package com.finvote.config;
 
 import com.finvote.security.AuthInterceptor;
 import com.finvote.security.TokenService;
+import com.finvote.service.AvatarStorage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -16,11 +17,14 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final TokenService tokenService;
+    private final AvatarStorage avatarStorage;
     private final boolean corsEnabled;
 
     public WebConfig(TokenService tokenService,
+                     AvatarStorage avatarStorage,
                      @Value("${finvote.cors-enabled:false}") boolean corsEnabled) {
         this.tokenService = tokenService;
+        this.avatarStorage = avatarStorage;
         this.corsEnabled = corsEnabled;
     }
 
@@ -47,6 +51,11 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        String location = avatarStorage.directory().toUri().toString();
+        if (!location.endsWith("/")) {
+            location = location + "/";
+        }
+        registry.addResourceHandler("/avatars/**").addResourceLocations(location);
         // 前端为 history 路由，其余路径统一交给 index.html
         registry.addResourceHandler("/**").addResourceLocations("classpath:/static/");
     }

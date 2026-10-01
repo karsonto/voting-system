@@ -24,6 +24,10 @@ spring:
       mode: always
       encoding: UTF-8
       schema-locations: classpath:schema.sql
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
 
 finvote:
   # SQLite 数据库文件（相对路径基于启动目录；也可用绝对路径）

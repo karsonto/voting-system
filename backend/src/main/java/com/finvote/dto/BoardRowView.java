@@ -14,6 +14,7 @@ public class BoardRowView {
     private String projectName;
     private String team;
     private String track;
+    private String mentor;
 
     /** 按出场顺序的名次（未揭晓时即出场序号）。 */
     private int order;

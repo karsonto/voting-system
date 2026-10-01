@@ -4,14 +4,11 @@ import { Pill } from '../../components/ui.jsx'
 import { authApi } from '../../lib/api.js'
 
 /**
- * 揭晓与导出：现场开关、CSV 导出、重置与改密码。
+ * CSV 导出、重置与改密码。评分通道在「实时调度」中开关。
  */
 export function StagePanel({
-  competition,
   stats,
   usingDefaultPassword,
-  onToggleOpen,
-  onToggleReveal,
   onExport,
   onClearScores,
   onReset,
@@ -33,53 +30,6 @@ export function StagePanel({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="panel">
-        <div className="panel-head">
-          <span className="panel-title">现场开关</span>
-          <div className="flex gap-2">
-            <Pill tone={competition?.open ? 'ok' : 'warn'}>
-              {competition?.open ? '评分通道开放' : '评分通道关闭'}
-            </Pill>
-            <Pill tone={competition?.revealed ? 'ok' : 'idle'}>
-              {competition?.revealed ? '大屏已揭晓' : '大屏未揭晓'}
-            </Pill>
-          </div>
-        </div>
-        <div className="panel-body flex flex-col gap-4">
-          <label className="switch">
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={!!competition?.open}
-              disabled={busy}
-              onChange={(e) => onToggleOpen(e.target.checked)}
-            />
-            <span className="switch-track" aria-hidden="true" />
-            <span className="text-[13.5px]">
-              <strong>评分通道</strong> — 关闭后评委端将暂停提交
-            </span>
-          </label>
-
-          <label className="switch">
-            <input
-              type="checkbox"
-              className="sr-only"
-              checked={!!competition?.revealed}
-              disabled={busy}
-              onChange={(e) => onToggleReveal(e.target.checked)}
-            />
-            <span className="switch-track" aria-hidden="true" />
-            <span className="text-[13.5px]">
-              <strong>大屏揭晓</strong> — 开启后总分大屏显示具体分数与排名
-            </span>
-          </label>
-
-          <p className="hint border-t border-line pt-3.5">
-            未揭晓时后端不会下发任何分数，即使直接访问接口也拿不到结果，因此可以放心把大屏提前打开。
-          </p>
-        </div>
-      </div>
-
       <div className="panel">
         <div className="panel-head">
           <span className="panel-title">数据导出</span>
@@ -125,25 +75,25 @@ export function StagePanel({
       <div className="rounded-lg border border-danger-ink/30 bg-danger-soft p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-[15px] font-semibold">清空评分与重置配置</h3>
-            <p className="hint mt-1">
-              「清空评分」只删除评分数据，保留项目、评委与维度；
-              「重置配置」会把项目、评委、维度、评分全部清空，管理员账号不受影响。
+            <h3 className="text-[15px] font-semibold">清空结果</h3>
+            <p className="hint mt-1 max-w-[62ch]">
+              删除全部已提交评分，项目、评委、维度和当前调度都保留。大屏排名会清空，评委可以重新打分。
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={onClearScores}
-              disabled={busy || !stats?.scoreCount}
-            >
-              清空评分
-            </button>
-            <button type="button" className="btn btn-danger" onClick={handleReset} disabled={busy}>
-              {confirmingReset ? '确认重置配置？' : '重置配置'}
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn btn-danger"
+            onClick={onClearScores}
+            disabled={busy || !stats?.scoreCount}
+          >
+            清空结果
+          </button>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-danger-ink/20 pt-4">
+          <p className="hint">重置配置会连项目、评委和维度一起删除，管理员账号不受影响。</p>
+          <button type="button" className="btn btn-secondary" onClick={handleReset} disabled={busy}>
+            {confirmingReset ? '确认重置配置？' : '重置配置'}
+          </button>
         </div>
       </div>
     </div>

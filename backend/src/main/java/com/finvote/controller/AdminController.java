@@ -30,7 +30,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import java.util.LinkedHashMap;
@@ -159,6 +161,14 @@ public class AdminController {
     public Map<String, Object> updateJudge(@PathVariable Long id, @Valid @RequestBody JudgeRequest request) {
         adminService.updateJudge(id, request);
         return ok();
+    }
+
+    @PostMapping("/judges/{id}/avatar")
+    public Map<String, Object> uploadAvatar(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        String avatar = adminService.saveAvatar(id, file);
+        Map<String, Object> body = ok();
+        body.put("avatar", avatar);
+        return body;
     }
 
     @DeleteMapping("/judges/{id}")

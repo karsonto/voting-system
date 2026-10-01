@@ -20,4 +20,7 @@ public class ProjectRequest {
 
     @Size(max = 80, message = "长度不能超过 80")
     private String track = "";
+
+    @Size(max = 80, message = "长度不能超过 80")
+    private String mentor = "";
 }

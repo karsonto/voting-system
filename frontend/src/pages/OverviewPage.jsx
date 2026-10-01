@@ -18,7 +18,6 @@ export function OverviewPage() {
   const projects = state?.projects ?? []
   const judgeCount = state?.judges?.length ?? 0
 
-  const revealed = competition?.revealed
   const open = competition?.open
   const weightSum = competition?.dimensionWeightSum ?? 0
   const board = state?.board ?? []
@@ -46,10 +45,10 @@ export function OverviewPage() {
     {
       index: '03 / 大屏',
       title: '总分大屏',
-      description: '投影到主会场大屏，展示各项目实时进度；揭晓前隐藏分数，揭晓后按规则生成排行。',
+      description: '投影到主会场，实时显示当前项目、各位评委得分，以及已评分项目的排名。',
       to: '/board',
-      pillTone: revealed ? 'ok' : 'idle',
-      pillText: revealed ? '已揭晓' : '未揭晓',
+      pillTone: stats?.coveredProjectCount ? 'ok' : 'idle',
+      pillText: stats?.coveredProjectCount ? '实时排名' : '等待评分',
       footLeft: stats?.coveredProjectCount ? `${stats.coveredProjectCount} 个项目已有成绩` : '尚无有效评分',
     },
   ]
@@ -58,13 +57,13 @@ export function OverviewPage() {
     <div>
       <section className="border-b border-line">
         <div className="mx-auto max-w-[1200px] px-8 py-14 max-md:px-4">
-          <p className="eyebrow">FINVOTE · 组委会工作台</p>
+          <p className="eyebrow">ATHLON · 组委会工作台</p>
           <h1 className="mt-3.5 max-w-[22ch] text-[clamp(32px,4.2vw,50px)] font-semibold leading-[1.07] tracking-[-0.025em]">
             三块屏幕，跑完一场演讲比赛的完整评分流程。
           </h1>
           <p className="mt-4 max-w-[62ch] text-base leading-relaxed text-ink-muted">
             后台配置赛制维度并实时调度评委正在评的项目；评委端按百分制多维度加权打分；
-            总分大屏按「去掉最高分与最低分后取平均」自动生成排行并一键揭晓。
+            总分大屏按计分规则实时生成已评分项目的排名。
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
@@ -80,7 +79,6 @@ export function OverviewPage() {
             <Pill tone={open ? 'ok' : 'warn'} live={open}>
               {open ? '评分开放中' : '评分已关闭'}
             </Pill>
-            <Pill tone={revealed ? 'ok' : 'idle'}>{revealed ? '结果已揭晓' : '结果未揭晓'}</Pill>
             <Pill tone="info">{competition?.stage || '未设置环节'}</Pill>
             <Pill tone={weightSum === 100 ? 'idle' : 'danger'}>维度权重合计 {weightSum}%</Pill>
           </div>
@@ -131,7 +129,7 @@ export function OverviewPage() {
               ['STEP 01', '配置赛制', '录入项目与评委名单，确认百分制维度权重合计 100%。'],
               ['STEP 02', '调度项目', '轮到某项目时，后台把评委批量切换到他正在评审的对象。'],
               ['STEP 03', '评委打分', '评委端即时收到当前项目，逐维度打分并提交。'],
-              ['STEP 04', '大屏揭晓', '系统按计分规则合并分数，组委会一键公开排行。'],
+              ['STEP 04', '大屏看分', '已评分项目按计分规则出现在大屏排行榜，分数随提交更新。'],
             ].map(([step, title, text]) => (
               <div
                 key={step}
@@ -243,7 +241,7 @@ export function OverviewPage() {
             <div className="panel-head">
               <span className="panel-title">项目评分进度</span>
               <span className="meta">
-                {revealed ? '结果已揭晓，可在总分大屏查看排名' : '揭晓前大屏不显示具体分数'}
+                大屏只显示已有评分的项目
               </span>
             </div>
             <div className="panel-body">
@@ -279,7 +277,7 @@ export function OverviewPage() {
                       {row.submittedCount}/{row.judgeCount} 已评
                     </span>
                     <span className="w-[86px] text-right font-mono text-[13px] font-semibold tnum">
-                      {revealed && row.mean !== null ? `${row.mean.toFixed(2)} 分` : '待揭晓'}
+                      {row.mean != null ? `${row.mean.toFixed(2)} 分` : '未评分'}
                     </span>
                   </div>
                 ))

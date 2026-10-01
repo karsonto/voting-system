@@ -27,6 +27,7 @@ public class JudgeRepository {
         j.setCurrentProjectId(rs.wasNull() ? null : projectId);
         j.setSortOrder(rs.getInt("sort_order"));
         j.setActive(rs.getInt("active") == 1);
+        j.setAvatar(rs.getString("avatar"));
         return j;
     };
 
@@ -110,6 +111,10 @@ public class JudgeRepository {
                 new MapSqlParameterSource()
                         .addValue("projectId", projectId)
                         .addValue("ids", judgeIds));
+    }
+
+    public void updateAvatar(Long id, String avatar) {
+        jdbcTemplate.update("UPDATE judge SET avatar = ? WHERE id = ?", avatar == null ? "" : avatar, id);
     }
 
     public void delete(Long id) {

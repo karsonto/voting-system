@@ -19,6 +19,8 @@ public class PublicStateResponse {
     private java.util.List<BoardRowView> board;
     /** 当前「正在评审」的项目，即大多数评委被调度到的项目。 */
     private Long currentProjectId;
+    /** 当前项目下每位评委的得分，按评委出场顺序排列。 */
+    private java.util.List<JudgeScoreView> currentScores = new java.util.ArrayList<JudgeScoreView>();
     /** 评委是否全部被调度到同一个项目。 */
     private boolean judgesAligned;
     private StatsView stats;
