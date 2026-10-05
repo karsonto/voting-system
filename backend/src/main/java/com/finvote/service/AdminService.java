@@ -1,6 +1,7 @@
 package com.finvote.service;
 
 import com.finvote.common.ApiException;
+import com.finvote.common.LocaleCopy;
 import com.finvote.domain.Competition;
 import com.finvote.domain.Dimension;
 import com.finvote.domain.Judge;
@@ -58,7 +59,7 @@ public class AdminService {
     // ---------------------------------------------------------------- 赛制
 
     @Transactional
-    public void updateCompetition(String name, String stage, String scaleId, String ruleId) {
+    public void updateCompetition(String name, String stage, String scaleId, String ruleId, String locale) {
         Competition competition = competitionService.current();
 
         String nextName = competition.getName();
@@ -85,7 +86,16 @@ public class AdminService {
             nextRuleId = ScoreRule.fromId(ruleId).getId();
         }
 
-        competitionService.updateBasics(competition.getId(), nextName, nextStage, nextScaleId, nextRuleId);
+        String nextLocale = LocaleCopy.orDefault(competition.getLocale());
+        if (locale != null && !locale.trim().isEmpty()) {
+            String normalized = LocaleCopy.normalize(locale);
+            if (normalized == null) {
+                throw ApiException.badRequest("界面语言只支持简体中文、繁体中文和英文");
+            }
+            nextLocale = normalized;
+        }
+
+        competitionService.updateBasics(competition.getId(), nextName, nextStage, nextScaleId, nextRuleId, nextLocale);
         competitionService.touch();
     }
 
@@ -304,9 +314,9 @@ public class AdminService {
             while (projects.size() < target) {
                 Project project = new Project();
                 project.setCompetitionId(competition.getId());
-                project.setName("待命名项目 " + (projects.size() + 1));
-                project.setTeam("待填写团队");
-                project.setTrack("待定赛道");
+                project.setName(LocaleCopy.projectPlaceholder(competition.getLocale(), projects.size() + 1));
+                project.setTeam(LocaleCopy.teamPlaceholder(competition.getLocale()));
+                project.setTrack(LocaleCopy.trackPlaceholder(competition.getLocale()));
                 project.setMentor("");
                 project.setSortOrder(projectRepository.maxSortOrder(competition.getId()) + 1);
                 project.setId(projectRepository.insert(project));
@@ -325,8 +335,8 @@ public class AdminService {
             while (judges.size() < target) {
                 Judge judge = new Judge();
                 judge.setCompetitionId(competition.getId());
-                judge.setName("评委 " + (judges.size() + 1));
-                judge.setOrg("待填写机构");
+                judge.setName(LocaleCopy.judgePlaceholder(competition.getLocale(), judges.size() + 1));
+                judge.setOrg(LocaleCopy.orgPlaceholder(competition.getLocale()));
                 judge.setPin(String.format("%04d", 1000 + (judges.size() + 1) * 7 % 9000));
                 judge.setActive(true);
                 judge.setSortOrder(judgeRepository.maxSortOrder(competition.getId()) + 1);
@@ -370,8 +380,10 @@ public class AdminService {
         judgeRepository.deleteAll(id);
         projectRepository.deleteAll(id);
         dimensionRepository.deleteAll(id);
-        competitionService.updateBasics(id, "未命名赛事", "第一轮",
-                ScoreScale.WEIGHTED_100.getId(), ScoreRule.TRIMMED_MEAN.getId());
+        competitionService.updateBasics(id, LocaleCopy.unnamedEvent(competition.getLocale()),
+                LocaleCopy.firstRound(competition.getLocale()),
+                ScoreScale.WEIGHTED_100.getId(), ScoreRule.TRIMMED_MEAN.getId(),
+                LocaleCopy.orDefault(competition.getLocale()));
         competitionService.updateSwitches(id, false, false);
         competitionService.touch();
     }

@@ -17,7 +17,7 @@ import java.util.List;
 public class CompetitionRepository {
 
     private static final String COLUMNS =
-            "id, name, stage, scale_id, rule_id, is_open, revealed, version, updated_at, created_at";
+            "id, name, stage, scale_id, rule_id, is_open, revealed, locale, version, updated_at, created_at";
 
     private static final RowMapper<Competition> ROW_MAPPER = (rs, rowNum) -> {
         Competition c = new Competition();
@@ -28,6 +28,7 @@ public class CompetitionRepository {
         c.setRuleId(rs.getString("rule_id"));
         c.setOpen(rs.getInt("is_open") == 1);
         c.setRevealed(rs.getInt("revealed") == 1);
+        c.setLocale(rs.getString("locale"));
         c.setVersion(rs.getLong("version"));
         c.setUpdatedAt(rs.getLong("updated_at"));
         c.setCreatedAt(rs.getLong("created_at"));
@@ -62,8 +63,8 @@ public class CompetitionRepository {
 
     public Long insert(Competition c) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        namedJdbc.update("INSERT INTO competition (name, stage, scale_id, rule_id, is_open, revealed, version, updated_at, created_at) "
-                        + "VALUES (:name, :stage, :scaleId, :ruleId, :open, :revealed, :version, :updatedAt, :createdAt)",
+        namedJdbc.update("INSERT INTO competition (name, stage, scale_id, rule_id, is_open, revealed, locale, version, updated_at, created_at) "
+                        + "VALUES (:name, :stage, :scaleId, :ruleId, :open, :revealed, :locale, :version, :updatedAt, :createdAt)",
                 new MapSqlParameterSource()
                         .addValue("name", c.getName())
                         .addValue("stage", c.getStage())
@@ -71,6 +72,7 @@ public class CompetitionRepository {
                         .addValue("ruleId", c.getRuleId())
                         .addValue("open", c.isOpen() ? 1 : 0)
                         .addValue("revealed", c.isRevealed() ? 1 : 0)
+                        .addValue("locale", c.getLocale() == null ? "zh-Hans" : c.getLocale())
                         .addValue("version", c.getVersion())
                         .addValue("updatedAt", c.getUpdatedAt())
                         .addValue("createdAt", c.getCreatedAt()),
@@ -79,15 +81,16 @@ public class CompetitionRepository {
         return key == null ? null : key.longValue();
     }
 
-    public void updateBasics(Long id, String name, String stage, String scaleId, String ruleId) {
+    public void updateBasics(Long id, String name, String stage, String scaleId, String ruleId, String locale) {
         namedJdbc.update("UPDATE competition SET name = :name, stage = :stage, scale_id = :scaleId, "
-                        + "rule_id = :ruleId, updated_at = :updatedAt WHERE id = :id",
+                        + "rule_id = :ruleId, locale = :locale, updated_at = :updatedAt WHERE id = :id",
                 new MapSqlParameterSource()
                         .addValue("id", id)
                         .addValue("name", name)
                         .addValue("stage", stage)
                         .addValue("scaleId", scaleId)
                         .addValue("ruleId", ruleId)
+                        .addValue("locale", locale == null || locale.trim().isEmpty() ? "zh-Hans" : locale)
                         .addValue("updatedAt", System.currentTimeMillis()));
     }
 

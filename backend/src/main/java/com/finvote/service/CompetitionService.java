@@ -49,6 +49,7 @@ public class CompetitionService {
         competition.setRuleId(com.finvote.domain.ScoreRule.TRIMMED_MEAN.getId());
         competition.setOpen(false);
         competition.setRevealed(false);
+        competition.setLocale("zh-Hans");
         competition.setVersion(1L);
         competition.setUpdatedAt(now);
         competition.setCreatedAt(now);
@@ -66,8 +67,8 @@ public class CompetitionService {
         return competition;
     }
 
-    public void updateBasics(Long id, String name, String stage, String scaleId, String ruleId) {
-        competitionRepository.updateBasics(id, name, stage, scaleId, ruleId);
+    public void updateBasics(Long id, String name, String stage, String scaleId, String ruleId, String locale) {
+        competitionRepository.updateBasics(id, name, stage, scaleId, ruleId, locale);
     }
 
     public void updateSwitches(Long id, Boolean open, Boolean revealed) {

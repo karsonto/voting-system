@@ -93,7 +93,7 @@ public class AdminController {
     @PutMapping("/competition")
     public Map<String, Object> updateCompetition(@RequestBody CompetitionUpdateRequest request) {
         adminService.updateCompetition(request.getName(), request.getStage(),
-                request.getScaleId(), request.getRuleId());
+                request.getScaleId(), request.getRuleId(), request.getLocale());
         return ok();
     }
 

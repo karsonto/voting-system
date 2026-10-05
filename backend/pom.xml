@@ -13,7 +13,7 @@
 
   <groupId>com.finvote</groupId>
   <artifactId>finvote</artifactId>
-  <version>1.1.0</version>
+  <version>1.2.0</version>
   <packaging>jar</packaging>
   <name>Athlon 评分系统</name>
   <description>Athlon 评分系统 - 后台配置台 / 评委评分端 / 总分大屏</description>

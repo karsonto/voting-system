@@ -5,6 +5,8 @@
  * 因此这里不做复杂的拦截器分层，保持一个薄封装即可。
  */
 
+import { translateServerMessage } from '../i18n/index.js'
+
 const ADMIN_TOKEN_KEY = 'finvote.admin.token'
 const ADMIN_PROFILE_KEY = 'finvote.admin.profile'
 const JUDGE_TOKEN_KEY = 'finvote.judge.token'
@@ -128,7 +130,7 @@ async function request(path, options = {}) {
     })
   } catch (error) {
     if (error.name === 'AbortError') throw error
-    throw new ApiError('无法连接到服务器，请确认后端已启动', 0)
+    throw new ApiError(translateServerMessage('无法连接到服务器，请确认后端已启动'), 0)
   }
 
   if (response.status === 401) {
@@ -136,12 +138,15 @@ async function request(path, options = {}) {
     if (role === 'ADMIN') storage.clearAdmin()
     if (role === 'JUDGE') storage.clearJudge()
     const message = await readErrorMessage(response)
-    throw new ApiError(message || '登录已过期，请重新登录', 401)
+    throw new ApiError(translateServerMessage(message || '登录已过期，请重新登录'), 401)
   }
 
   if (!response.ok) {
     const message = await readErrorMessage(response)
-    throw new ApiError(message || `请求失败（${response.status}）`, response.status)
+    throw new ApiError(
+      translateServerMessage(message || `请求失败（${response.status}）`),
+      response.status,
+    )
   }
 
   if (raw) {

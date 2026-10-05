@@ -14,13 +14,8 @@ import { JudgeTable } from './admin/JudgeTable.jsx'
 import { DispatchPanel } from './admin/DispatchPanel.jsx'
 import { StagePanel } from './admin/StagePanel.jsx'
 import { currentClockFull } from '../lib/format.js'
-
-const TABS = [
-  { id: 'setup', label: '赛制配置' },
-  { id: 'roster', label: '项目与评委' },
-  { id: 'dispatch', label: '实时调度' },
-  { id: 'stage', label: '导出与清空结果' },
-]
+import { holdServerLocale, setAppLocale, translate, useI18n } from '../i18n/index.js'
+import { LanguagePanel } from './admin/LanguagePanel.jsx'
 
 /**
  * 后台配置台。
@@ -29,6 +24,7 @@ const TABS = [
  * 因此组委会可以实时看到评委端的提交进度。
  */
 export function AdminPage() {
+  const { t, locale } = useI18n()
   const [hasToken, setHasToken] = useState(() => !!storage.getAdminToken())
   const { state, loading, mutate, error } = useAdminState({ enabled: hasToken })
   const { message, show } = useToast()
@@ -43,13 +39,13 @@ export function AdminPage() {
         if (successMessage) show(successMessage)
         return true
       } catch (err) {
-        if (err.status !== 401) show(err.message || '操作失败')
+        if (err.status !== 401) show(err.message || t('操作失败'))
         return false
       } finally {
         setBusy(false)
       }
     },
-    [mutate, show],
+    [mutate, show, t],
   )
 
   const competition = state?.competition
@@ -66,56 +62,75 @@ export function AdminPage() {
   const handleApplyScale = (projectCount, judgeCountValue) =>
     run(
       () => adminApi.applyScale(projectCount, judgeCountValue),
-      `规模已调整为 ${projectCount} 个项目 / ${judgeCountValue} 位评委`,
+      t('规模已调整为 {projects} 个项目 / {judges} 位评委', {
+        projects: projectCount,
+        judges: judgeCountValue,
+      }),
     )
 
-  const handleSelectScale = (scaleId) =>
-    run(() => adminApi.updateCompetition({ scaleId }), '评分制式已更新')
+  const handleLocale = async (next) => {
+    const release = holdServerLocale()
+    const previous = locale
+    setAppLocale(next)
+    try {
+      const ok = await run(() => adminApi.updateCompetition({ locale: next }), translate(next, '语言已切换'))
+      if (!ok) setAppLocale(previous)
+    } finally {
+      release()
+    }
+  }
 
-  const handleSelectRule = (ruleId) => run(() => adminApi.updateCompetition({ ruleId }), '计分规则已更新')
+  const handleSelectScale = (scaleId) =>
+    run(() => adminApi.updateCompetition({ scaleId }), t('评分制式已更新'))
+
+  const handleSelectRule = (ruleId) => run(() => adminApi.updateCompetition({ ruleId }), t('计分规则已更新'))
 
   const handleAddDimension = () =>
-    run(() => adminApi.addDimension({ name: '新维度', weight: 0 }), '已添加维度，请设置名称与权重')
+    run(() => adminApi.addDimension({ name: t('新维度'), weight: 0 }), t('已添加维度，请设置名称与权重'))
 
   const handleUpdateDimension = (id, payload) => run(() => adminApi.updateDimension(id, payload))
 
   const handleDeleteDimension = async (id) => {
     const dimension = dimensions.find((d) => d.id === id)
     if (dimensions.length <= 1) {
-      show('至少需要保留一个评分维度')
+      show(t('至少需要保留一个评分维度'))
       return
     }
     const hasScores = (stats?.scoreCount ?? 0) > 0
     const confirmed = window.confirm(
-      `确定删除维度「${dimension?.name ?? ''}」吗？` +
-        (hasScores ? '\n已提交的评分会按剩余维度重新折算总分。' : ''),
+      t('确定删除维度「{name}」吗？', { name: dimension?.name ?? '' }) +
+        (hasScores ? t('\n已提交的评分会按剩余维度重新折算总分。') : ''),
     )
     if (!confirmed) return
-    await run(() => adminApi.deleteDimension(id), '维度已删除，评分总分已重算')
+    await run(() => adminApi.deleteDimension(id), t('维度已删除，评分总分已重算'))
   }
 
-  const handleAddProject = (payload) => run(() => adminApi.addProject(payload), '项目已添加')
+  const handleAddProject = (payload) => run(() => adminApi.addProject(payload), t('项目已添加'))
 
-  const handleUpdateProject = (id, payload) => run(() => adminApi.updateProject(id, payload), '项目已更新')
+  const handleUpdateProject = (id, payload) => run(() => adminApi.updateProject(id, payload), t('项目已更新'))
 
   const handleDeleteProject = async (project) => {
     const confirmed = window.confirm(
-      `确定删除项目「${project.name}」吗？\n该项目的评分会一并删除，调度到该项目的评委将变为未分配。`,
+      t('确定删除项目「{name}」吗？\n该项目的评分会一并删除，调度到该项目的评委将变为未分配。', {
+        name: project.name,
+      }),
     )
     if (!confirmed) return
-    await run(() => adminApi.deleteProject(project.id), '项目已删除')
+    await run(() => adminApi.deleteProject(project.id), t('项目已删除'))
   }
 
-  const handleAddJudge = (payload) => run(() => adminApi.addJudge(payload), '评委已添加')
+  const handleAddJudge = (payload) => run(() => adminApi.addJudge(payload), t('评委已添加'))
 
-  const handleUpdateJudge = (id, payload) => run(() => adminApi.updateJudge(id, payload), '评委已更新')
+  const handleUpdateJudge = (id, payload) => run(() => adminApi.updateJudge(id, payload), t('评委已更新'))
 
-  const handleUploadAvatar = (id, file) => run(() => adminApi.uploadAvatar(id, file), '头像已更新')
+  const handleUploadAvatar = (id, file) => run(() => adminApi.uploadAvatar(id, file), t('头像已更新'))
 
   const handleDeleteJudge = async (judge) => {
-    const confirmed = window.confirm(`确定删除评委「${judge.name}」吗？\n该评委的全部评分会被删除，此操作不可撤销。`)
+    const confirmed = window.confirm(
+      t('确定删除评委「{name}」吗？\n该评委的全部评分会被删除，此操作不可撤销。', { name: judge.name }),
+    )
     if (!confirmed) return
-    await run(() => adminApi.deleteJudge(judge.id), '评委已删除')
+    await run(() => adminApi.deleteJudge(judge.id), t('评委已删除'))
   }
 
   const handleRandomPin = () => adminApi.randomPin()
@@ -124,21 +139,21 @@ export function AdminPage() {
     run(
       () => adminApi.dispatch(judgeIds, projectId),
       projectId === null
-        ? '已取消全部调度'
-        : `已切换到「${projects.find((p) => p.id === projectId)?.name ?? ''}」`,
+        ? t('已取消全部调度')
+        : t('已切换到「{name}」', { name: projects.find((p) => p.id === projectId)?.name ?? '' }),
     )
 
   const handleDispatchOne = (judgeId, projectId) =>
-    run(() => adminApi.dispatch([judgeId], projectId), '已更新该评委的评审项目')
+    run(() => adminApi.dispatch([judgeId], projectId), t('已更新该评委的评审项目'))
 
   const handleDispatchNext = async () => {
     setBusy(true)
     try {
       const result = await mutate(() => adminApi.dispatchNext())
       const next = projects.find((p) => p.id === result?.projectId)
-      show(next ? `已切到下一项：${next.name}` : '已切到下一项')
+      show(next ? t('已切到下一项：{name}', { name: next.name }) : t('已切到下一项'))
     } catch (err) {
-      if (err.status !== 401) show(err.message || '操作失败')
+      if (err.status !== 401) show(err.message || t('操作失败'))
     } finally {
       setBusy(false)
     }
@@ -146,21 +161,23 @@ export function AdminPage() {
 
   const handleClearScore = async (judge) => {
     const project = projects.find((p) => p.id === judge.currentProjectId)
-    const confirmed = window.confirm(`确定清空「${judge.name}」对「${project?.name ?? ''}」的评分吗？`)
+    const confirmed = window.confirm(
+      t('确定清空「{judge}」对「{project}」的评分吗？', { judge: judge.name, project: project?.name ?? '' }),
+    )
     if (!confirmed) return
-    await run(() => adminApi.clearScore(judge.id, judge.currentProjectId), '已清空该评委的评分')
+    await run(() => adminApi.clearScore(judge.id, judge.currentProjectId), t('已清空该评委的评分'))
   }
 
   const handleToggleOpen = (open) =>
-    run(() => adminApi.updateSwitches({ open }), open ? '评分通道已开启' : '评分通道已关闭')
+    run(() => adminApi.updateSwitches({ open }), open ? t('评分通道已开启') : t('评分通道已关闭'))
 
   const handleExport = async (kind) => {
     setBusy(true)
     try {
       await downloadExport(kind)
-      show(kind === 'ranking' ? '项目排名已导出' : '评分明细已导出')
+      show(kind === 'ranking' ? t('项目排名已导出') : t('评分明细已导出'))
     } catch (err) {
-      show(err.message || '导出失败')
+      show(err.message || t('导出失败'))
     } finally {
       setBusy(false)
     }
@@ -168,14 +185,16 @@ export function AdminPage() {
 
   const handleClearScores = async () => {
     const confirmed = window.confirm(
-      `确定清空全部 ${stats?.scoreCount ?? 0} 份评分结果吗？\n项目、评委、维度和调度都会保留，评委需要重新打分。此操作不可撤销。`,
+      t('确定清空全部 {count} 份评分结果吗？\n项目、评委、维度和调度都会保留，评委需要重新打分。此操作不可撤销。', {
+        count: stats?.scoreCount ?? 0,
+      }),
     )
     if (!confirmed) return
-    await run(() => adminApi.clearAllScores(), '评分结果已清空，可以重新打分')
+    await run(() => adminApi.clearAllScores(), t('评分结果已清空，可以重新打分'))
   }
 
   const handleReset = async () => {
-    await run(() => adminApi.reset(), '配置已重置为空白状态')
+    await run(() => adminApi.reset(), t('配置已重置为空白状态'))
   }
 
   const handleLogout = async () => {
@@ -186,7 +205,7 @@ export function AdminPage() {
     }
     storage.clearAdmin()
     setHasToken(false)
-    show('已退出登录')
+    show(t('已退出登录'))
   }
 
   // ------------------------------------------------------------ 渲染
@@ -196,7 +215,7 @@ export function AdminPage() {
       <AdminLogin
         onSuccess={() => {
           setHasToken(true)
-          show('登录成功')
+          show(t('登录成功'))
         }}
       />
     )
@@ -216,11 +235,17 @@ export function AdminPage() {
 
   const weightSum = competition?.dimensionWeightSum ?? 0
 
+  const tabs = [
+    { id: 'setup', label: t('赛制配置') },
+    { id: 'roster', label: t('项目与评委') },
+    { id: 'dispatch', label: t('实时调度') },
+    { id: 'stage', label: t('导出与清空结果') },
+  ]
   const tabCounts = {
-    setup: `${dimensions.length} 维度`,
+    setup: t('{count} 维度', { count: dimensions.length }),
     roster: `${projects.length}/${judges.length}`,
-    dispatch: `${projects.filter((p) => p.submittedCount > 0).length} 项有分`,
-    stage: `${stats?.scoreCount ?? 0} 份`,
+    dispatch: t('{count} 项有分', { count: projects.filter((p) => p.submittedCount > 0).length }),
+    stage: t('{count} 份', { count: stats?.scoreCount ?? 0 }),
   }
 
   return (
@@ -233,17 +258,17 @@ export function AdminPage() {
               <span className="grid h-6 w-6 place-items-center rounded-md border border-ink font-mono text-xs font-bold">
                 A
               </span>
-              <span className="text-[15px] font-semibold">Athlon 评分系统</span>
+              <span className="text-[15px] font-semibold">{t('Athlon 评分系统')}</span>
             </div>
 
             <div className="mb-3.5 rounded border border-line px-3 py-2.5">
-              <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-muted">当前赛事</div>
-              <div className="mt-1 text-[13.5px] font-semibold leading-snug">{competition?.name || '未命名赛事'}</div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.08em] text-ink-muted">{t('当前赛事')}</div>
+              <div className="mt-1 text-[13.5px] font-semibold leading-snug">{competition?.name || t('未命名赛事')}</div>
               <div className="meta mt-1">{competition?.stage || '—'}</div>
             </div>
 
             <nav className="flex flex-col gap-0.5 max-lg:flex-row max-lg:flex-wrap">
-              {TABS.map((item) => (
+              {tabs.map((item) => (
                 <button
                   key={item.id}
                   type="button"
@@ -262,13 +287,13 @@ export function AdminPage() {
 
             <div className="mt-auto flex flex-col gap-1 pt-4">
               <Link to="/" className="btn btn-ghost btn-sm justify-start">
-                返回总览
+                {t('返回总览')}
               </Link>
               <Link to="/board" className="btn btn-ghost btn-sm justify-start">
-                打开总分大屏
+                {t('打开总分大屏')}
               </Link>
               <button type="button" className="btn btn-ghost btn-sm justify-start" onClick={handleLogout}>
-                退出登录
+                {t('退出登录')}
               </button>
             </div>
           </div>
@@ -276,7 +301,7 @@ export function AdminPage() {
           {usingDefaultPassword() && (
             <div className="rounded-lg border border-danger-ink/30 bg-danger-soft px-3.5 py-3">
               <p className="text-[12.5px] text-danger-ink">
-                管理员仍在使用默认密码，请到「导出与清空结果 → 管理员密码」处修改。
+                {t('管理员仍在使用默认密码，请到「导出与清空结果 → 管理员密码」处修改。')}
               </p>
             </div>
           )}
@@ -286,17 +311,21 @@ export function AdminPage() {
         <div className="min-w-0">
           <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h1 className="text-[22px] font-semibold">后台配置台</h1>
+              <h1 className="text-[22px] font-semibold">{t('后台配置台')}</h1>
               <p className="meta mt-1">
-                {projects.length} 个项目 · {judges.length} 位评委 · {stats?.scoreCount ?? 0} 份评分
-                {state?.updatedAt ? ` · 数据更新 ${currentClockFull(new Date(state.updatedAt))}` : ''}
+                {t('{projects} 个项目 · {judges} 位评委 · {scores} 份评分', {
+                  projects: projects.length,
+                  judges: judges.length,
+                  scores: stats?.scoreCount ?? 0,
+                })}
+                {state?.updatedAt ? t(' · 数据更新 {time}', { time: currentClockFull(new Date(state.updatedAt)) }) : ''}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
-              {weightSum !== 100 && <Pill tone="danger">维度权重合计 {weightSum}%</Pill>}
+              {weightSum !== 100 && <Pill tone="danger">{t('维度权重合计 {weight}%', { weight: weightSum })}</Pill>}
               <Pill tone={competition?.open ? 'ok' : 'warn'} live={competition?.open}>
-                {competition?.open ? '评分开放中' : '评分已关闭'}
+                {competition?.open ? t('评分开放中') : t('评分已关闭')}
               </Pill>
             </div>
           </header>
@@ -309,6 +338,7 @@ export function AdminPage() {
 
           {tab === 'setup' && (
             <div className="flex flex-col gap-5">
+              <LanguagePanel locale={competition?.locale || locale} onChange={handleLocale} busy={busy} />
               <div className="grid gap-5 xl:grid-cols-2">
                 <InfoPanel
                   competition={competition}

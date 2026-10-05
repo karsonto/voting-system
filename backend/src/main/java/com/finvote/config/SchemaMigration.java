@@ -31,6 +31,9 @@ public class SchemaMigration {
         if (!hasColumn("judge", "avatar")) {
             jdbcTemplate.execute("ALTER TABLE judge ADD COLUMN avatar TEXT NOT NULL DEFAULT ''");
         }
+        if (!hasColumn("competition", "locale")) {
+            jdbcTemplate.execute("ALTER TABLE competition ADD COLUMN locale TEXT NOT NULL DEFAULT 'zh-Hans'");
+        }
     }
 
     private boolean hasColumn(String table, String column) {

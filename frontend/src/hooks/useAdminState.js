@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { adminApi, onAuthChange, storage } from '../lib/api.js'
+import { applyServerLocale, beginLocaleRead } from '../i18n/index.js'
 import { useVersionPolling } from '../lib/hooks.js'
 
 /**
@@ -23,8 +24,10 @@ export function useAdminState({ poll = true, interval = 2000 } = {}) {
       return
     }
     try {
+      const ticket = beginLocaleRead()
       const data = await adminApi.state()
       if (!aliveRef.current) return
+      applyServerLocale(data?.competition?.locale, ticket)
       setState(data)
       setError(null)
     } catch (err) {

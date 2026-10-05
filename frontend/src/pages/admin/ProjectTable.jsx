@@ -1,22 +1,24 @@
 import { useState } from 'react'
 import { EmptyState, Pill } from '../../components/ui.jsx'
 import { pad2, percent } from '../../lib/format.js'
+import { useI18n } from '../../i18n/index.js'
 
 /**
  * 项目名单：表格内直接编辑，失焦或回车即保存。
  */
 export function ProjectTable({ projects, judgeCount, onAdd, onUpdate, onDelete, busy }) {
+  const { t } = useI18n()
   const [draft, setDraft] = useState(null)
   const [adding, setAdding] = useState(false)
 
   return (
     <div className="panel">
       <div className="panel-head">
-        <span className="panel-title">参赛项目</span>
+        <span className="panel-title">{t('参赛项目')}</span>
         <div className="flex items-center gap-2">
-          <span className="meta">{projects.length} 个项目</span>
+          <span className="meta">{t('{count} 个项目', { count: projects.length })}</span>
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAdding(true)} disabled={busy}>
-            添加项目
+            {t('添加项目')}
           </button>
         </div>
       </div>
@@ -26,18 +28,18 @@ export function ProjectTable({ projects, judgeCount, onAdd, onUpdate, onDelete, 
           <thead>
             <tr>
               <th className="w-[42px]">#</th>
-              <th className="min-w-[140px]">项目名称</th>
-              <th className="w-[160px]">团队</th>
-              <th className="w-[140px]">赛道</th>
-              <th className="w-[140px]">导师</th>
-              <th className="w-[130px]">评分进度</th>
+              <th className="min-w-[140px]">{t('项目名称')}</th>
+              <th className="w-[160px]">{t('团队')}</th>
+              <th className="w-[140px]">{t('赛道')}</th>
+              <th className="w-[140px]">{t('导师')}</th>
+              <th className="w-[130px]">{t('评分进度')}</th>
               <th className="w-[70px]" />
             </tr>
           </thead>
           <tbody>
             {adding && (
               <DraftRow
-                placeholder={{ name: '项目名称', team: '团队', track: '赛道', mentor: '导师姓名' }}
+                placeholder={{ name: t('项目名称'), team: t('团队'), track: t('赛道'), mentor: t('导师姓名') }}
                 onCancel={() => setAdding(false)}
                 onConfirm={async (value) => {
                   await onAdd(value)
@@ -65,11 +67,11 @@ export function ProjectTable({ projects, judgeCount, onAdd, onUpdate, onDelete, 
 
       {projects.length === 0 && !adding && (
         <EmptyState
-          title="还没有参赛项目"
-          description="添加项目，或在「赛事基本信息」里用批量规模生成占位条目。"
+          title={t('还没有参赛项目')}
+          description={t('添加项目，或在「赛事基本信息」里用批量规模生成占位条目。')}
           action={
             <button type="button" className="btn btn-secondary btn-sm mt-1" onClick={() => setAdding(true)}>
-              添加第一个项目
+              {t('添加第一个项目')}
             </button>
           }
         />
@@ -79,6 +81,7 @@ export function ProjectTable({ projects, judgeCount, onAdd, onUpdate, onDelete, 
 }
 
 function ProjectRow({ project, index, judgeCount, busy, onUpdate, onDelete, draft, setDraft }) {
+  const { t } = useI18n()
   const isEditing = draft?.type === 'project' && draft.id === project.id
 
   if (isEditing) {
@@ -119,7 +122,7 @@ function ProjectRow({ project, index, judgeCount, busy, onUpdate, onDelete, draf
             onClick={() => setDraft({ type: 'project', id: project.id })}
             disabled={busy}
           >
-            编辑
+            {t('编辑')}
           </button>
           <button
             type="button"
@@ -127,7 +130,7 @@ function ProjectRow({ project, index, judgeCount, busy, onUpdate, onDelete, draf
             onClick={() => onDelete(project)}
             disabled={busy}
           >
-            删除
+            {t('删除')}
           </button>
         </div>
       </td>
@@ -137,6 +140,7 @@ function ProjectRow({ project, index, judgeCount, busy, onUpdate, onDelete, draf
 
 /** 新增 / 编辑共用的行内表单。 */
 function DraftRow({ initial = { name: '', team: '', track: '', mentor: '' }, placeholder = {}, onCancel, onConfirm }) {
+  const { t } = useI18n()
   const [value, setValue] = useState(initial)
   const [saving, setSaving] = useState(false)
 
@@ -163,7 +167,7 @@ function DraftRow({ initial = { name: '', team: '', track: '', mentor: '' }, pla
           className="input py-1.5"
           autoFocus
           value={value.name}
-          placeholder={placeholder.name || '项目名称'}
+          placeholder={placeholder.name || t('项目名称')}
           onChange={(e) => setValue((v) => ({ ...v, name: e.target.value }))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') confirm()
@@ -175,7 +179,7 @@ function DraftRow({ initial = { name: '', team: '', track: '', mentor: '' }, pla
         <input
           className="input py-1.5"
           value={value.team}
-          placeholder={placeholder.team || '团队'}
+          placeholder={placeholder.team || t('团队')}
           onChange={(e) => setValue((v) => ({ ...v, team: e.target.value }))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') confirm()
@@ -187,7 +191,7 @@ function DraftRow({ initial = { name: '', team: '', track: '', mentor: '' }, pla
         <input
           className="input py-1.5"
           value={value.track}
-          placeholder={placeholder.track || '赛道'}
+          placeholder={placeholder.track || t('赛道')}
           onChange={(e) => setValue((v) => ({ ...v, track: e.target.value }))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') confirm()
@@ -199,7 +203,7 @@ function DraftRow({ initial = { name: '', team: '', track: '', mentor: '' }, pla
         <input
           className="input py-1.5"
           value={value.mentor || ''}
-          placeholder={placeholder.mentor || '导师姓名'}
+          placeholder={placeholder.mentor || t('导师姓名')}
           onChange={(e) => setValue((v) => ({ ...v, mentor: e.target.value }))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') confirm()
@@ -211,10 +215,10 @@ function DraftRow({ initial = { name: '', team: '', track: '', mentor: '' }, pla
       <td>
         <div className="flex justify-end gap-1">
           <button type="button" className="btn btn-primary btn-sm" onClick={confirm} disabled={saving}>
-            保存
+            {t('保存')}
           </button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>
-            取消
+            {t('取消')}
           </button>
         </div>
       </td>

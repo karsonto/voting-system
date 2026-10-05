@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS competition (
     rule_id    TEXT    NOT NULL DEFAULT 'trimmed-mean',
     is_open    INTEGER NOT NULL DEFAULT 1,
     revealed   INTEGER NOT NULL DEFAULT 0,
+    locale     TEXT    NOT NULL DEFAULT 'zh-Hans',
     version    INTEGER NOT NULL DEFAULT 0,
     updated_at INTEGER NOT NULL,
     created_at INTEGER NOT NULL

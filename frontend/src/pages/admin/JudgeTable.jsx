@@ -1,24 +1,26 @@
 import { useState } from 'react'
 import { EmptyState, Pill } from '../../components/ui.jsx'
 import { pad2 } from '../../lib/format.js'
+import { useI18n } from '../../i18n/index.js'
 
 /**
  * 评委名单：维护姓名、机构、PIN，以及查看当前评审项目。
  */
 export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onUploadAvatar, onRandomPin, busy }) {
+  const { t } = useI18n()
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState(null)
 
-  const projectName = (id) => projects.find((p) => p.id === id)?.name || '未分配'
+  const projectName = (id) => projects.find((p) => p.id === id)?.name || t('未分配')
 
   return (
     <div className="panel">
       <div className="panel-head">
-        <span className="panel-title">评委名单</span>
+        <span className="panel-title">{t('评委')}</span>
         <div className="flex items-center gap-2">
-          <span className="meta">{judges.length} 位评委</span>
+          <span className="meta">{t('{count} 位评委', { count: judges.length })}</span>
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAdding(true)} disabled={busy}>
-            添加评委
+            {t('添加评委')}
           </button>
         </div>
       </div>
@@ -28,12 +30,12 @@ export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onUplo
           <thead>
             <tr>
               <th className="w-[42px]">#</th>
-              <th className="w-[88px]">头像</th>
-              <th className="w-[120px]">姓名</th>
-              <th>机构 / 职务</th>
-              <th className="w-[110px]">登入 PIN</th>
-              <th className="w-[190px]">当前评审</th>
-              <th className="w-[130px]">提交情况</th>
+              <th className="w-[88px]">{t('头像')}</th>
+              <th className="w-[120px]">{t('姓名')}</th>
+              <th>{t('机构 / 职务')}</th>
+              <th className="w-[110px]">{t('登入 PIN')}</th>
+              <th className="w-[190px]">{t('当前评审')}</th>
+              <th className="w-[130px]">{t('提交情况')}</th>
               <th className="w-[70px]" />
             </tr>
           </thead>
@@ -71,7 +73,7 @@ export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onUplo
                     {judge.name}
                     {!judge.active && (
                       <span className="ml-1.5">
-                        <Pill tone="idle">已停用</Pill>
+                        <Pill tone="idle">{t('已停用')}</Pill>
                       </span>
                     )}
                   </td>
@@ -80,7 +82,7 @@ export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onUplo
                   <td className="text-ink-muted">{projectName(judge.currentProjectId)}</td>
                   <td>
                     <Pill tone={judge.submittedOnCurrent ? 'ok' : 'warn'}>
-                      {judge.submittedOnCurrent ? '当前项已提交' : '当前项待评分'}
+                      {judge.submittedOnCurrent ? t('当前项已提交') : t('当前项待评分')}
                     </Pill>
                   </td>
                   <td>
@@ -91,7 +93,7 @@ export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onUplo
                         onClick={() => setEditingId(judge.id)}
                         disabled={busy}
                       >
-                        编辑
+                        {t('编辑')}
                       </button>
                       <button
                         type="button"
@@ -99,7 +101,7 @@ export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onUplo
                         onClick={() => onDelete(judge)}
                         disabled={busy}
                       >
-                        删除
+                        {t('删除')}
                       </button>
                     </div>
                   </td>
@@ -112,11 +114,11 @@ export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onUplo
 
       {judges.length === 0 && !adding && (
         <EmptyState
-          title="还没有评委"
-          description="添加评委并为其分配 4 位 PIN，评委凭 PIN 登入评分端。"
+          title={t('还没有评委')}
+          description={t('添加评委并为其分配 4 位 PIN，评委凭 PIN 登入评分端。')}
           action={
             <button type="button" className="btn btn-secondary btn-sm mt-1" onClick={() => setAdding(true)}>
-              添加第一位评委
+              {t('添加第一位评委')}
             </button>
           }
         />
@@ -126,13 +128,14 @@ export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onUplo
 }
 
 function AvatarCell({ judge, busy, onUpload }) {
+  const { t } = useI18n()
   return (
     <label className={`inline-flex items-center gap-2 ${busy ? 'pointer-events-none opacity-60' : 'cursor-pointer'}`}>
       {judge.avatar ? (
         <img src={judge.avatar} alt="" className="h-10 w-10 rounded-md object-cover ring-1 ring-line" />
       ) : (
         <span className="grid h-10 w-10 place-items-center rounded-md bg-canvas text-[11px] text-ink-muted ring-1 ring-line">
-          上传
+          {t('上传')}
         </span>
       )}
       <input
@@ -151,6 +154,7 @@ function AvatarCell({ judge, busy, onUpload }) {
 }
 
 function DraftRow({ initial = { name: '', org: '', pin: '', active: true }, onRandomPin, onCancel, onConfirm }) {
+  const { t } = useI18n()
   const [value, setValue] = useState({
     name: initial.name ?? '',
     org: initial.org ?? '',
@@ -164,11 +168,11 @@ function DraftRow({ initial = { name: '', org: '', pin: '', active: true }, onRa
 
   async function confirm() {
     if (!value.name.trim()) {
-      setLocalError('请输入姓名')
+      setLocalError(t('请输入姓名'))
       return
     }
     if (!pinValid) {
-      setLocalError('PIN 必须是 4 位数字')
+      setLocalError(t('PIN 必须是 4 位数字'))
       return
     }
     setLocalError('')
@@ -193,13 +197,13 @@ function DraftRow({ initial = { name: '', org: '', pin: '', active: true }, onRa
   return (
     <tr className="bg-brand-50/60">
       <td className="font-mono text-xs text-ink-muted">NEW</td>
-      <td className="text-xs text-ink-muted">保存后可上传</td>
+      <td className="text-xs text-ink-muted">{t('保存后可上传')}</td>
       <td>
         <input
           className="input py-1.5"
           autoFocus
           value={value.name}
-          placeholder="姓名"
+          placeholder={t('姓名')}
           onChange={(e) => setValue((v) => ({ ...v, name: e.target.value }))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') confirm()
@@ -211,7 +215,7 @@ function DraftRow({ initial = { name: '', org: '', pin: '', active: true }, onRa
         <input
           className="input py-1.5"
           value={value.org}
-          placeholder="机构 / 职务"
+          placeholder={t('机构 / 职务')}
           onChange={(e) => setValue((v) => ({ ...v, org: e.target.value }))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') confirm()
@@ -234,20 +238,20 @@ function DraftRow({ initial = { name: '', org: '', pin: '', active: true }, onRa
               if (e.key === 'Escape') onCancel()
             }}
           />
-          <button type="button" className="btn btn-ghost btn-sm" onClick={fillRandomPin} title="随机生成 PIN">
+          <button type="button" className="btn btn-ghost btn-sm" onClick={fillRandomPin} title={t('随机生成 PIN')}>
             ⟳
           </button>
         </div>
       </td>
-      <td className="text-xs text-ink-muted">新增后默认排到第一个项目</td>
+      <td className="text-xs text-ink-muted">{t('新增后默认排到第一个项目')}</td>
       <td className="text-xs text-danger-ink">{localError}</td>
       <td>
         <div className="flex justify-end gap-1">
           <button type="button" className="btn btn-primary btn-sm" onClick={confirm} disabled={saving}>
-            保存
+            {t('保存')}
           </button>
           <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel} disabled={saving}>
-            取消
+            {t('取消')}
           </button>
         </div>
       </td>

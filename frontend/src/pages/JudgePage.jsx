@@ -5,6 +5,7 @@ import { Toast, useToast } from '../components/Toast.jsx'
 import { Pill } from '../components/ui.jsx'
 import { clampScore, formatScore1, initial } from '../lib/format.js'
 import { joinText, pad2 } from '../lib/format.js'
+import { useI18n } from '../i18n/index.js'
 
 /**
  * 评委评分端。
@@ -12,6 +13,7 @@ import { joinText, pad2 } from '../lib/format.js'
  * 未登录时是登录页；登录后进入评分台，通过高频轮询感知「主持人是否把我切到了别的项目」。
  */
 export function JudgePage() {
+  const { t } = useI18n()
   const [hasToken, setHasToken] = useState(() => !!storage.getJudgeToken())
   const { message, show } = useToast(2400)
 
@@ -32,7 +34,7 @@ export function JudgePage() {
         <JudgeLogin
           onSuccess={() => {
             setHasToken(true)
-            show('登录成功')
+            show(t('登录成功'))
           }}
         />
         <Toast message={message} />
@@ -46,7 +48,7 @@ export function JudgePage() {
         onLogout={() => {
           storage.clearJudge()
           setHasToken(false)
-          show('已退出登录')
+          show(t('已退出登录'))
         }}
         toast={show}
       />
@@ -58,6 +60,7 @@ export function JudgePage() {
 /* ------------------------------------------------------------------ 登录 */
 
 function JudgeLogin({ onSuccess }) {
+  const { t } = useI18n()
   const [judges, setJudges] = useState([])
   const [judgeId, setJudgeId] = useState('')
   const [pin, setPin] = useState('')
@@ -75,7 +78,7 @@ function JudgeLogin({ onSuccess }) {
         if (Array.isArray(data) && data.length > 0) setJudgeId(String(data[0].id))
       })
       .catch((err) => {
-        if (alive) setError(err.message || '无法获取评委名单')
+        if (alive) setError(err.message || t('无法获取评委名单'))
       })
       .finally(() => {
         if (alive) setLoadingJudges(false)
@@ -88,11 +91,11 @@ function JudgeLogin({ onSuccess }) {
   async function handleSubmit(event) {
     event.preventDefault()
     if (!judgeId) {
-      setError('请选择评委')
+      setError(t('请选择评委'))
       return
     }
     if (!/^\d{4}$/.test(pin)) {
-      setError('请输入 4 位 PIN 码')
+      setError(t('请输入 4 位 PIN 码'))
       return
     }
     setError('')
@@ -103,7 +106,7 @@ function JudgeLogin({ onSuccess }) {
       storage.setJudgeProfile({ judgeId: data.judgeId, name: data.name, org: data.org })
       onSuccess?.()
     } catch (err) {
-      setError(err.message || '登入失败')
+      setError(err.message || t('登入失败'))
     } finally {
       setSubmitting(false)
     }
@@ -121,9 +124,9 @@ function JudgeLogin({ onSuccess }) {
     return (
       <div className="mx-auto grid h-dvh max-w-[520px] place-items-center px-4">
         <div className="panel p-8 text-center">
-          <h2 className="text-lg font-semibold">暂无可用评委</h2>
+          <h2 className="text-lg font-semibold">{t('暂无可用评委')}</h2>
           <p className="hint mt-2">
-            组委会还没有在后台录入评委名单。请联系工作人员完成配置后再登入。
+            {t('组委会还没有在后台录入评委名单。请联系工作人员完成配置后再登入。')}
           </p>
         </div>
       </div>
@@ -137,17 +140,17 @@ function JudgeLogin({ onSuccess }) {
           <span className="grid h-7 w-7 place-items-center rounded-[7px] border border-ink font-mono text-[13px] font-bold">
             FV
           </span>
-          <span className="text-base font-semibold">评委评分端</span>
+          <span className="text-base font-semibold">{t('评委评分端')}</span>
         </div>
 
-        <h2 className="text-[19px] font-semibold">验证评委身份</h2>
+        <h2 className="text-[19px] font-semibold">{t('验证评委身份')}</h2>
         <p className="mt-1.5 text-[13.5px] text-ink-muted">
-          选择你的姓名并输入 4 位 PIN，即可进入评分台。PIN 由组委会在后台配置。
+          {t('选择你的姓名并输入 4 位 PIN，即可进入评分台。PIN 由组委会在后台配置。')}
         </p>
 
         <form className="mt-5 flex flex-col gap-4" onSubmit={handleSubmit}>
           <label className="field">
-            <span className="field-label">评委</span>
+            <span className="field-label">{t('评委')}</span>
             <select className="select" value={judgeId} onChange={(e) => setJudgeId(e.target.value)}>
               {judges.map((judge) => (
                 <option key={judge.id} value={judge.id}>
@@ -158,13 +161,13 @@ function JudgeLogin({ onSuccess }) {
           </label>
 
           <label className="field">
-            <span className="field-label">PIN 码</span>
+            <span className="field-label">{t('登入 PIN')}</span>
             <input
               className="input input-num text-center tracking-[0.3em]"
               value={pin}
               inputMode="numeric"
               maxLength={4}
-              placeholder="4 位数字"
+              placeholder={t('4 位数字')}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
             />
           </label>
@@ -172,7 +175,7 @@ function JudgeLogin({ onSuccess }) {
           <p className="min-h-[18px] text-[12.5px] text-danger-ink">{error}</p>
 
           <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-            {submitting ? '验证中…' : '登入评分台'}
+            {submitting ? t('验证中…') : t('登入评分台')}
           </button>
         </form>
       </div>
@@ -183,6 +186,7 @@ function JudgeLogin({ onSuccess }) {
 /* ------------------------------------------------------------------ 评分台 */
 
 function ScoringConsole({ onLogout, toast }) {
+  const { t } = useI18n()
   const { session, loading, error, reload } = useJudgeSession({ interval: 1500 })
   const profile = storage.getJudgeProfile()
   const judge = session?.judge
@@ -225,7 +229,7 @@ function ScoringConsole({ onLogout, toast }) {
     setFormValues(next)
 
     if (switched && currentProject) {
-      toast(`已切换评审项目：${currentProject.name}`)
+      toast(t('已切换评审项目：{name}', { name: currentProject.name }))
     }
     seenOnceRef.current = true
     // 仅在项目 ID 或维度结构变化时重载，避免每次轮询都覆盖用户正在输入的分数
@@ -260,11 +264,11 @@ function ScoringConsole({ onLogout, toast }) {
 
   async function handleSubmit() {
     if (!currentProjectId) {
-      toast('当前没有可评分的项目')
+      toast(t('当前没有可评分的项目'))
       return
     }
     if (!allScored) {
-      toast('请先完成所有维度的打分')
+      toast(t('请先完成所有维度的打分'))
       return
     }
     setSubmitting(true)
@@ -272,9 +276,9 @@ function ScoringConsole({ onLogout, toast }) {
       const result = await judgeApi.submit(currentProjectId, formValues, '')
       clear(currentProjectId)
       await reload()
-      toast(`已提交「${currentProject.name}」评分：${formatScore1(result?.weightedTotal)} 分`)
+      toast(t('已提交「{name}」评分：{score} 分', { name: currentProject.name, score: formatScore1(result?.weightedTotal) }))
     } catch (err) {
-      toast(err.message || '提交失败')
+      toast(err.message || t('提交失败'))
     } finally {
       setSubmitting(false)
     }
@@ -295,17 +299,17 @@ function ScoringConsole({ onLogout, toast }) {
     return (
       <div className="grid h-dvh place-items-center px-4">
         <div className="panel max-w-[560px] border-danger-ink/30 p-6">
-          <h2 className="text-lg font-semibold text-danger-ink">无法加载评分台</h2>
+          <h2 className="text-lg font-semibold text-danger-ink">{t('无法加载评分台')}</h2>
           <p className="hint mt-2">{error.message}</p>
           <button type="button" className="btn btn-secondary btn-sm mt-4" onClick={onLogout}>
-            返回登入页
+            {t('返回登录页')}
           </button>
         </div>
       </div>
     )
   }
 
-  const name = judge?.name ?? profile?.name ?? '评委'
+  const name = judge?.name ?? profile?.name ?? t('评委')
   const myScores = session?.myScores ?? {}
   const projects = session?.projects ?? []
   const submittedCount = Object.keys(myScores).length
@@ -318,7 +322,7 @@ function ScoringConsole({ onLogout, toast }) {
       ? currentProjectId
       : (scoredProjects[scoredProjects.length - 1]?.id ?? null)
   const historyProject = projects.find((project) => sameId(project.id, activeHistoryId))
-  const historyBreakdown = breakdownOf(activeHistoryId ? myScores[activeHistoryId] : null, dimensions)
+  const historyBreakdown = breakdownOf(activeHistoryId ? myScores[activeHistoryId] : null, dimensions, t)
 
   return (
     <div className="flex h-dvh max-h-dvh flex-col overflow-hidden bg-canvas">
@@ -337,10 +341,10 @@ function ScoringConsole({ onLogout, toast }) {
 
         <div className="flex shrink-0 items-center gap-2">
           <Pill tone={open ? 'info' : 'warn'} live={open}>
-            {open ? '已连接' : '通道已暂停'}
+            {open ? t('已连接') : t('通道已暂停')}
           </Pill>
           <button type="button" className="btn btn-ghost btn-sm" onClick={handleLogout}>
-            退出
+            {t('退出')}
           </button>
         </div>
       </div>
@@ -349,10 +353,10 @@ function ScoringConsole({ onLogout, toast }) {
         <section className="flex min-h-0 flex-col gap-3">
           <div className="panel shrink-0 px-4 py-3">
             <div className="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">
-              当前评审项目
+              {t('当前评审项目')}
             </div>
             <h1 className="mt-1 truncate text-[clamp(20px,2.4vw,28px)] font-semibold leading-tight tracking-[-0.025em]">
-              {currentProject?.name || '暂未分配评审项目'}
+              {currentProject?.name || t('暂未分配评审项目')}
             </h1>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Pill tone="idle">{currentProject?.team || '—'}</Pill>
@@ -367,14 +371,14 @@ function ScoringConsole({ onLogout, toast }) {
 
           <div className="panel flex min-h-0 flex-1 flex-col">
             <div className="panel-head shrink-0 py-2.5">
-              <span className="panel-title">多维度打分</span>
+              <span className="panel-title">{t('多维度打分')}</span>
               <span className="meta">
-                0–{maxScore} · 权重 {weightSum}%
+                {t('0–{max} · 权重 {weight}%', { max: maxScore, weight: weightSum })}
               </span>
             </div>
             <div className="flex min-h-0 flex-1 flex-col justify-evenly px-4 py-1">
               {dimensions.length === 0 ? (
-                <p className="hint text-center">组委会还没有配置评分维度。</p>
+                <p className="hint text-center">{t('组委会还没有配置评分维度。')}</p>
               ) : (
                 dimensions.map((dimension) => (
                   <DimensionControl
@@ -395,10 +399,10 @@ function ScoringConsole({ onLogout, toast }) {
           <div className="panel shrink-0">
             <div className="flex items-center justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
-                <div className="font-mono text-[11px] text-ink-muted">加权总分</div>
+                <div className="font-mono text-[11px] text-ink-muted">{t('加权总分')}</div>
                 <div className="font-mono text-[32px] font-semibold leading-none tracking-[-0.03em] tnum">
                   {formatScore1(weightedTotal)}
-                  <span className="ml-1 text-[13px] font-medium text-ink-muted">分</span>
+                  <span className="ml-1 text-[13px] font-medium text-ink-muted">{t('分')}</span>
                 </div>
               </div>
               <button
@@ -407,14 +411,14 @@ function ScoringConsole({ onLogout, toast }) {
                 onClick={handleSubmit}
                 disabled={submitting || !open || !currentProjectId || !allScored}
               >
-                {submitting ? '提交中…' : existingScore ? '更新评分' : '提交评分'}
+                {submitting ? t('提交中…') : existingScore ? t('更新评分') : t('提交评分')}
               </button>
             </div>
           </div>
 
           <div className="panel flex min-h-0 flex-1 flex-col">
             <div className="panel-head shrink-0 py-2.5">
-              <span className="panel-title">我的评分进度</span>
+              <span className="panel-title">{t('我的评分进度')}</span>
               <span className="meta">
                 {submittedCount} / {projectCount}
               </span>
@@ -425,11 +429,11 @@ function ScoringConsole({ onLogout, toast }) {
                 <>
                   <div className="truncate text-[12.5px] font-medium" title={historyProject.name}>
                     {historyProject.name}
-                    <span className="ml-2 font-normal text-ink-muted">维度分数</span>
+                    <span className="ml-2 font-normal text-ink-muted">{t('维度分数')}</span>
                   </div>
                   <div className="mt-1.5 flex max-h-12 flex-wrap gap-1.5 overflow-hidden">
                     {historyBreakdown.length === 0 ? (
-                      <span className="hint">这份评分没有维度明细。</span>
+                      <span className="hint">{t('这份评分没有维度明细。')}</span>
                     ) : (
                       historyBreakdown.map((row) => (
                         <span key={row.id} className="pill pill-idle">
@@ -440,12 +444,12 @@ function ScoringConsole({ onLogout, toast }) {
                   </div>
                 </>
               ) : (
-                <p className="hint">提交后点选项目，可回看各维度分数。</p>
+                <p className="hint">{t('提交后点选项目，可回看各维度分数。')}</p>
               )}
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col justify-evenly overflow-hidden px-2 py-1">
-              {projectCount === 0 && <p className="hint px-2 text-center">还没有参赛项目。</p>}
+              {projectCount === 0 && <p className="hint px-2 text-center">{t('还没有参赛项目。')}</p>}
               {projects.map((project) => {
                 const score = myScores[project.id]
                 const isCurrent = sameId(project.id, currentProjectId)
@@ -461,11 +465,11 @@ function ScoringConsole({ onLogout, toast }) {
                     }`}
                   >
                     <span className={`min-w-0 truncate text-[13px] ${isCurrent ? 'font-semibold' : ''}`}>
-                      {isCurrent ? '当前 · ' : ''}
+                      {isCurrent ? t('当前 · ') : ''}
                       {project.name}
                     </span>
                     <Pill tone={score ? 'ok' : 'idle'}>
-                      {score ? `${formatScore1(score.weightedTotal)}` : '待评'}
+                      {score ? `${formatScore1(score.weightedTotal)}` : t('待评')}
                     </Pill>
                   </button>
                 )
@@ -479,7 +483,7 @@ function ScoringConsole({ onLogout, toast }) {
 }
 
 /** 把一份已提交评分展开成「维度名 → 分数」，供进度区回看。 */
-function breakdownOf(score, dimensions) {
+function breakdownOf(score, dimensions, t) {
   if (!score?.values) return []
   const used = new Set()
   const rows = []
@@ -491,7 +495,7 @@ function breakdownOf(score, dimensions) {
   })
   Object.entries(score.values).forEach(([id, value]) => {
     if (used.has(String(id)) || value === undefined || value === null) return
-    rows.push({ id, name: `维度 ${id}`, value })
+    rows.push({ id, name: t('维度 {id}', { id }), value })
   })
   return rows
 }
@@ -502,13 +506,14 @@ function sameId(left, right) {
 
 /** 单个维度的滑杆 + 数值输入。行高随剩余空间收缩，保证整页不出现滚动条。 */
 function DimensionControl({ dimension, value, max, disabled, onChange }) {
+  const { t } = useI18n()
   const safeValue = typeof value === 'number' ? value : Math.round(max * 0.8)
 
   return (
     <div className="min-h-0 py-1">
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <span className="truncate text-[13.5px] font-medium">{dimension.name}</span>
-        <span className="shrink-0 font-mono text-[11px] text-ink-muted">权重 {dimension.weight}%</span>
+        <span className="shrink-0 font-mono text-[11px] text-ink-muted">{t('权重 {weight}%', { weight: dimension.weight })}</span>
       </div>
 
       <div className="grid grid-cols-[1fr_64px] items-center gap-2.5">
@@ -521,7 +526,7 @@ function DimensionControl({ dimension, value, max, disabled, onChange }) {
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
           className="h-5 w-full cursor-pointer accent-brand-600"
-          aria-label={`${dimension.name} 得分`}
+          aria-label={t('{name} 得分', { name: dimension.name })}
         />
         <input
           className="input input-num px-1 py-1 text-center"
@@ -531,7 +536,7 @@ function DimensionControl({ dimension, value, max, disabled, onChange }) {
           value={safeValue}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}
-          aria-label={`${dimension.name} 数值`}
+          aria-label={t('{name} 数值', { name: dimension.name })}
         />
       </div>
     </div>

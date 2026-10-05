@@ -67,6 +67,8 @@ public class StateAssembler {
         view.setStage(competition.getStage());
         view.setOpen(competition.isOpen());
         view.setRevealed(competition.isRevealed());
+        view.setLocale(competition.getLocale() == null || competition.getLocale().trim().isEmpty()
+                ? "zh-Hans" : competition.getLocale());
         view.setRev(competition.getVersion());
         view.setUpdatedAt(competition.getUpdatedAt());
         view.setVersion(competition.getVersion());

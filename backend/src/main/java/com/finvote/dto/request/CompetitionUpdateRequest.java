@@ -14,4 +14,6 @@ public class CompetitionUpdateRequest {
     private String scaleId;
     /** 计分规则 ID。 */
     private String ruleId;
+    /** 界面语言：zh-Hans、zh-Hant、en。null 表示不修改。 */
+    private String locale;
 }

@@ -25,6 +25,8 @@ public class CompetitionView {
 
     private boolean open;
     private boolean revealed;
+    /** 界面语言：zh-Hans / zh-Hant / en。 */
+    private String locale;
     /** 赛事自身的修订号，与全局 version 一同用于前端判断刷新。 */
     private long rev;
     private long updatedAt;

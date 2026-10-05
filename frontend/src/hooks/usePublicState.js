@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { publicApi } from '../lib/api.js'
+import { applyServerLocale, beginLocaleRead } from '../i18n/index.js'
 import { useVersionPolling } from '../lib/hooks.js'
 
 /**
@@ -15,8 +16,10 @@ export function usePublicState({ poll = true, interval = 1500 } = {}) {
 
   const load = useCallback(async () => {
     try {
+      const ticket = beginLocaleRead()
       const data = await publicApi.state()
       if (!aliveRef.current) return
+      applyServerLocale(data?.competition?.locale, ticket)
       setState(data)
       setError(null)
     } catch (err) {

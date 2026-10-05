@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { EmptyState, Pill, ProgressRow } from '../../components/ui.jsx'
 import { pad2, percent } from '../../lib/format.js'
+import { useI18n } from '../../i18n/index.js'
 
 /**
  * 实时调度台：把评委切到某个项目，评委端与大屏会自动同步。
@@ -21,6 +22,7 @@ export function DispatchPanel({
   onClearScore,
   busy,
 }) {
+  const { t } = useI18n()
   const [targetProjectId, setTargetProjectId] = useState(
     currentProjectId ?? projects[0]?.id ?? '',
   )
@@ -31,9 +33,9 @@ export function DispatchPanel({
     <div className="flex flex-col gap-5">
       <div className="panel">
         <div className="panel-head">
-          <span className="panel-title">评分通道</span>
+          <span className="panel-title">{t('评分通道')}</span>
           <Pill tone={competition?.open ? 'ok' : 'warn'} live={!!competition?.open}>
-            {competition?.open ? '评分通道开放' : '评分通道关闭'}
+            {competition?.open ? t('评分通道开放') : t('评分通道关闭')}
           </Pill>
         </div>
         <div className="panel-body flex flex-col gap-3">
@@ -47,30 +49,31 @@ export function DispatchPanel({
             />
             <span className="switch-track" aria-hidden="true" />
             <span className="text-[13.5px]">
-              <strong>开启评分</strong> — 打开后评委才能提交分数，关闭后暂停提交
+              <strong>{t('开启评分')}</strong>
+              {t(' — 打开后评委才能提交分数，关闭后暂停提交')}
             </span>
           </label>
-          <p className="hint">已提交的分数会保留。通道关闭时，评委端不能再提交或修改评分。</p>
+          <p className="hint">{t('已提交的分数会保留。通道关闭时，评委端不能再提交或修改评分。')}</p>
         </div>
       </div>
 
       {projects.length === 0 ? (
         <div className="panel">
           <div className="panel-head">
-            <span className="panel-title">实时调度</span>
+            <span className="panel-title">{t('实时调度')}</span>
           </div>
           <EmptyState
-            title="还没有参赛项目"
-            description="先在「项目与评委」中录入项目，然后才能把评委调度过去。"
+            title={t('还没有参赛项目')}
+            description={t('先在「项目与评委」中录入项目，然后才能把评委调度过去。')}
           />
         </div>
       ) : (
         <>
       <div className="panel">
         <div className="panel-head">
-          <span className="panel-title">批量切换到项目</span>
+          <span className="panel-title">{t('批量切换到项目')}</span>
           <Pill tone="info" live>
-            实时同步
+            {t('实时同步')}
           </Pill>
         </div>
         <div className="panel-body">
@@ -80,7 +83,7 @@ export function DispatchPanel({
               value={targetProjectId}
               onChange={(e) => setTargetProjectId(e.target.value ? Number(e.target.value) : '')}
             >
-              <option value="">— 选择项目 —</option>
+              <option value="">{t('— 选择项目 —')}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -94,11 +97,11 @@ export function DispatchPanel({
               disabled={busy || targetProjectId === ''}
               onClick={() => onDispatchAll(null, Number(targetProjectId))}
             >
-              全员切换到该项目
+              {t('全员切换到该项目')}
             </button>
 
             <button type="button" className="btn btn-secondary" onClick={onNext} disabled={busy}>
-              切到下一项
+              {t('切到下一项')}
             </button>
 
             <button
@@ -107,25 +110,30 @@ export function DispatchPanel({
               onClick={() => onDispatchAll(null, null)}
               disabled={busy}
             >
-              取消全部调度
+              {t('取消全部调度')}
             </button>
           </div>
 
           <p className="hint mt-3">
             {judgesAligned && currentProject
-              ? `当前全员统一评审：${currentProject.name}`
+              ? t('当前全员统一评审：{name}', { name: currentProject.name })
               : currentProject
-                ? `评委分散在多个项目上（多数正在评「${currentProject.name}」），可点击「全员切换到该项目」统一。`
-                : '当前尚未分配评审项目。'}
+                ? t('评委分散在多个项目上（多数正在评「{name}」），可点击「全员切换到该项目」统一。', {
+                    name: currentProject.name,
+                  })
+                : t('当前尚未分配评审项目。')}
           </p>
         </div>
       </div>
 
       <div className="panel overflow-hidden">
         <div className="panel-head">
-          <span className="panel-title">评委调度台</span>
+          <span className="panel-title">{t('评委调度台')}</span>
           <span className="meta">
-            {judges.filter((j) => j.currentProjectId).length} / {judges.length} 位评委已分配项目
+            {t('{assigned} / {total} 位评委已分配项目', {
+              assigned: judges.filter((j) => j.currentProjectId).length,
+              total: judges.length,
+            })}
           </span>
         </div>
 
@@ -134,10 +142,10 @@ export function DispatchPanel({
             <thead>
               <tr>
                 <th className="w-[42px]">#</th>
-                <th className="w-[110px]">评委</th>
-                <th>机构 / 职务</th>
-                <th className="w-[280px]">当前评审项目</th>
-                <th className="w-[130px]">该项目提交状态</th>
+                <th className="w-[110px]">{t('评委')}</th>
+                <th>{t('机构 / 职务')}</th>
+                <th className="w-[280px]">{t('当前评审项目')}</th>
+                <th className="w-[130px]">{t('该项目提交状态')}</th>
                 <th className="w-[70px]" />
               </tr>
             </thead>
@@ -156,7 +164,7 @@ export function DispatchPanel({
                         onDispatchOne(judge.id, e.target.value === '' ? null : Number(e.target.value))
                       }
                     >
-                      <option value="">— 取消分配 —</option>
+                      <option value="">{t('— 取消分配 —')}</option>
                       {projects.map((project) => (
                         <option key={project.id} value={project.id}>
                           {project.name}
@@ -166,7 +174,7 @@ export function DispatchPanel({
                   </td>
                   <td>
                     <Pill tone={judge.submittedOnCurrent ? 'ok' : 'warn'}>
-                      {judge.submittedOnCurrent ? '已提交' : '待评分'}
+                      {judge.submittedOnCurrent ? t('已提交') : t('待评分')}
                     </Pill>
                   </td>
                   <td>
@@ -176,11 +184,11 @@ export function DispatchPanel({
                         className="btn btn-ghost btn-sm text-ink-faint hover:text-danger-ink"
                         disabled={busy || !judge.currentProjectId || !judge.submittedOnCurrent}
                         title={
-                          judge.submittedOnCurrent ? '清空该评委对当前项目的评分' : '该评委尚未提交此项评分'
+                          judge.submittedOnCurrent ? t('清空该评委对当前项目的评分') : t('该评委尚未提交此项评分')
                         }
                         onClick={() => onClearScore(judge)}
                       >
-                        清空
+                        {t('清空')}
                       </button>
                     </div>
                   </td>
@@ -191,15 +199,15 @@ export function DispatchPanel({
         </div>
 
         {judges.length === 0 && (
-          <EmptyState title="还没有评委" description="先在「项目与评委」中添加评委名单。" />
+          <EmptyState title={t('还没有评委')} description={t('先在「项目与评委」中添加评委名单。')} />
         )}
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="panel">
           <div className="panel-head">
-            <span className="panel-title">各项目完成度</span>
-            <span className="meta">已提交评委 / 总评委</span>
+            <span className="panel-title">{t('各项目完成度')}</span>
+            <span className="meta">{t('已提交评委 / 总评委')}</span>
           </div>
           <div className="panel-body">
             {projects.map((project) => (
@@ -216,16 +224,14 @@ export function DispatchPanel({
 
         <div className="panel">
           <div className="panel-head">
-            <span className="panel-title">调度说明</span>
+            <span className="panel-title">{t('调度说明')}</span>
           </div>
           <div className="panel-body flex flex-col gap-3">
-            <p className="hint">1. 演讲进行时把全员切到当前项目，评委端标题会立即变为该项目。</p>
-            <p className="hint">2. 若个别评委需要补评上一项目，可在上方表格单独修改他的「当前评审项目」。</p>
-            <p className="hint">3. 已提交的评分不会因切换而丢失，可按项目分别汇总。</p>
-            <p className="hint">
-              4. 调度变化会在 1–2 秒内自动推送到评委端与总分大屏，现场无需手动刷新。
-            </p>
-            <p className="hint">5. 评分通道开启后，评委才能提交评分。</p>
+            <p className="hint">{t('1. 演讲进行时把全员切到当前项目，评委端标题会立即变为该项目。')}</p>
+            <p className="hint">{t('2. 若个别评委需要补评上一项目，可在上方表格单独修改他的「当前评审项目」。')}</p>
+            <p className="hint">{t('3. 已提交的评分不会因切换而丢失，可按项目分别汇总。')}</p>
+            <p className="hint">{t('4. 调度变化会在 1–2 秒内自动推送到评委端与总分大屏，现场无需手动刷新。')}</p>
+            <p className="hint">{t('5. 评分通道开启后，评委才能提交评分。')}</p>
           </div>
         </div>
       </div>

@@ -17,6 +17,8 @@ public class Competition {
     private String ruleId;
     private boolean open;
     private boolean revealed;
+    /** 界面语言：zh-Hans / zh-Hant / en。全系统共用这一项。 */
+    private String locale;
     /** 全局自增版本号，供前端轮询判断是否需要刷新。 */
     private long version;
     private long updatedAt;

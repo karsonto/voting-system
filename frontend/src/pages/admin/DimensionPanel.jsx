@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Pill } from '../../components/ui.jsx'
+import { useI18n } from '../../i18n/index.js'
 
 /**
  * 评分维度与权重。
@@ -9,25 +10,26 @@ import { Pill } from '../../components/ui.jsx'
  * 最终得分依然是 0–100 制。
  */
 export function DimensionPanel({ dimensions, onAdd, onUpdate, onDelete, busy }) {
+  const { t } = useI18n()
   const sum = dimensions.reduce((acc, d) => acc + (Number(d.weight) || 0), 0)
   const balanced = sum === 100
 
   return (
     <div className="panel">
       <div className="panel-head">
-        <span className="panel-title">评分维度与权重</span>
-        <Pill tone={balanced ? 'idle' : 'danger'}>合计 {sum}%</Pill>
+        <span className="panel-title">{t('评分维度与权重')}</span>
+        <Pill tone={balanced ? 'idle' : 'danger'}>{t('合计 {sum}%', { sum })}</Pill>
       </div>
 
       <div className="panel-body">
         <div className="flex items-center gap-2.5 border-b border-line pb-2 font-mono text-[11px] uppercase tracking-[0.04em] text-ink-muted">
-          <span className="flex-1">维度名称</span>
-          <span className="w-[110px]">权重（%）</span>
+          <span className="flex-1">{t('维度名称')}</span>
+          <span className="w-[110px]">{t('权重（%）')}</span>
           <span className="w-[38px]" />
         </div>
 
         {dimensions.length === 0 && (
-          <p className="hint py-6 text-center">还没有维度，点击下方「添加维度」开始配置。</p>
+          <p className="hint py-6 text-center">{t('还没有维度，点击下方「添加维度」开始配置。')}</p>
         )}
 
         {dimensions.map((dimension) => (
@@ -42,12 +44,16 @@ export function DimensionPanel({ dimensions, onAdd, onUpdate, onDelete, busy }) 
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
           <button type="button" className="btn btn-secondary btn-sm" onClick={onAdd} disabled={busy}>
-            添加维度
+            {t('添加维度')}
           </button>
           <span className={`hint ${balanced ? '' : 'text-danger-ink'}`}>
             {balanced
-              ? '权重已配平至 100%，可以开始评分。'
-              : `权重合计 ${sum}%，需要配平到 100%（当前${sum > 100 ? '超出' : '还差'} ${Math.abs(100 - sum)}%）。`}
+              ? t('权重已配平至 100%，可以开始评分。')
+              : t('权重合计 {sum}%，需要配平到 100%（当前{gap} {delta}%）。', {
+                  sum,
+                  gap: sum > 100 ? t('超出') : t('还差'),
+                  delta: Math.abs(100 - sum),
+                })}
           </span>
         </div>
       </div>
@@ -56,6 +62,7 @@ export function DimensionPanel({ dimensions, onAdd, onUpdate, onDelete, busy }) 
 }
 
 function DimensionRow({ dimension, onUpdate, onDelete, busy }) {
+  const { t } = useI18n()
   const [name, setName] = useState(dimension.name)
   const [weight, setWeight] = useState(String(dimension.weight))
 
@@ -92,7 +99,7 @@ function DimensionRow({ dimension, onUpdate, onDelete, busy }) {
           onChange={(e) => setName(e.target.value)}
           onBlur={commit}
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-          aria-label="维度名称"
+          aria-label={t('维度名称')}
         />
       </div>
 
@@ -105,7 +112,7 @@ function DimensionRow({ dimension, onUpdate, onDelete, busy }) {
         onChange={(e) => setWeight(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
-        aria-label="权重"
+        aria-label={t('权重')}
       />
 
       <button
@@ -113,13 +120,13 @@ function DimensionRow({ dimension, onUpdate, onDelete, busy }) {
         className="btn btn-ghost btn-sm w-[38px] text-ink-faint hover:text-danger-ink"
         onClick={() => onDelete(dimension.id)}
         disabled={busy}
-        title="删除该维度"
-        aria-label={`删除维度 ${dimension.name}`}
+        title={t('删除该维度')}
+        aria-label={t('删除维度 {name}', { name: dimension.name })}
       >
         ✕
       </button>
 
-      {dirty && <span className="w-full text-[11.5px] text-warn-ink">有未保存的修改，回车即保存</span>}
+      {dirty && <span className="w-full text-[11.5px] text-warn-ink">{t('有未保存的修改，回车即保存')}</span>}
     </div>
   )
 }

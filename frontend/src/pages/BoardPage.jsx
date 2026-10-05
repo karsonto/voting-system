@@ -3,14 +3,16 @@ import { Link } from 'react-router-dom'
 import { usePublicState } from '../hooks/usePublicState.js'
 import { currentClock, formatScore } from '../lib/format.js'
 import icbcLogo from '../assets/icbc-asia-logo.png'
+import { useI18n } from '../i18n/index.js'
 
 /**
  * 现场总分大屏。
  *
- * 布局参照现场打分系统：左侧排行榜，中间当前项目与评委得分，右侧放大的总分。
+ * 左侧是项目排名。右侧上方是当前项目，总分在项目信息下方、靠这一栏的上半部居中。
  * 只把已经有分数的项目放进排行榜。
  */
 export function BoardPage() {
+  const { t } = useI18n()
   const { state, loading, error } = usePublicState({ interval: 1500 })
   const [clock, setClock] = useState(() => currentClock())
 
@@ -39,10 +41,6 @@ export function BoardPage() {
   const currentProject = (state?.projects ?? []).find((p) => p.id === state?.currentProjectId) ?? null
   const currentRow = (state?.board ?? []).find((row) => row.projectId === state?.currentProjectId) ?? null
   const ranked = (state?.board ?? []).filter((row) => row.submittedCount > 0 && row.mean != null)
-  const judgeCards = judgeCardsOf(state)
-  const ruleId = competition?.ruleId
-  const highLabel = ruleId === 'trimmed-mean' || ruleId === 'drop-high' ? '去掉最高分' : '最高分'
-  const lowLabel = ruleId === 'trimmed-mean' ? '去掉最低分' : '最低分'
 
   return (
     <div className="relative flex h-dvh max-h-dvh flex-col overflow-hidden text-white">
@@ -60,13 +58,17 @@ export function BoardPage() {
 
       <style>{REVEAL_CSS}</style>
       <header className="relative z-10 flex h-[108px] shrink-0 items-center justify-between gap-4 px-6">
-        <img src={icbcLogo} alt="ICBC (Asia) 工銀亞洲" className="h-[68px] w-auto shrink-0" />
-        <div className="min-w-0 flex-1 px-4 text-center">
+        <img
+          src={icbcLogo}
+          alt="中国工商银行（亚洲）"
+          className="h-[64px] w-auto max-w-[46vw] shrink-0 object-contain object-left"
+        />
+        <div className="min-w-0 flex-1 px-4 text-center [container-type:inline-size]">
           <h1
-            className="truncate text-[34px] font-extrabold tracking-[0.14em] text-[#ffe7a3] xl:text-[46px]"
+            className="truncate text-[clamp(22px,6.2cqi,46px)] font-extrabold tracking-[0.14em] text-[#ffe7a3]"
             style={{ textShadow: '0 0 22px rgba(255,206,70,0.75), 0 3px 0 rgba(90,40,0,0.35)' }}
           >
-            {competition?.name || 'Athlon 评分系统'}
+            {competition?.name || t('Athlon 评分系统')}
           </h1>
           <div className="mx-auto mt-2 h-[3px] w-[min(420px,70%)] bg-gradient-to-r from-transparent via-[#f6c445] to-transparent shadow-[0_0_16px_rgba(246,196,69,0.85)]" />
         </div>
@@ -77,13 +79,13 @@ export function BoardPage() {
             className="rounded-sm border border-white/30 px-3 py-1 text-[13px] text-white/85 hover:bg-white/10"
             onClick={toggleFullscreen}
           >
-            全屏
+            {t('全屏')}
           </button>
           <Link
             to="/"
             className="rounded-sm border border-white/30 px-3 py-1 text-[13px] text-white/85 hover:bg-white/10"
           >
-            返回
+            {t('返回')}
           </Link>
         </div>
       </header>
@@ -100,16 +102,16 @@ export function BoardPage() {
             className="shrink-0 pb-3 text-center text-[30px] font-bold tracking-[0.42em] text-[#f6c445]"
             style={{ textShadow: '0 2px 0 rgba(0,0,0,0.28), 0 0 16px rgba(246,196,69,0.55)' }}
           >
-            排行榜
+            {t('排行榜')}
           </h2>
           <div className="grid shrink-0 grid-cols-[36px_56px_minmax(0,1fr)_64px] gap-2 border-b border-white/25 px-1 pb-2 text-[15px] text-white/90">
-            <span>排行</span>
-            <span>团队</span>
-            <span>项目名称</span>
-            <span className="text-right">得分</span>
+            <span>{t('排行')}</span>
+            <span>{t('团队')}</span>
+            <span>{t('项目名称')}</span>
+            <span className="text-right">{t('得分')}</span>
           </div>
           {ranked.length === 0 ? (
-            <div className="flex min-h-[220px] items-center justify-center text-[16px] text-white/55">还没有已评分项目</div>
+            <div className="flex min-h-[220px] items-center justify-center text-[16px] text-white/55">{t('还没有已评分项目')}</div>
           ) : (
             <ol className="min-h-0 flex-1 overflow-hidden py-1">
               {ranked.map((row, index) => (
@@ -133,60 +135,34 @@ export function BoardPage() {
           )}
         </section>
 
-        <section className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)_auto]">
-          <div className="flex items-start justify-between gap-8 pl-6 pr-2 pt-2">
-            <div className="min-w-0 pt-2">
-              {currentProject ? (
-                <>
-                  <div className="truncate text-[22px]">
-                    团队：<span className="font-semibold">{currentProject.team || '—'}</span>
-                  </div>
-                  <div className="mt-1 truncate text-[26px] font-semibold leading-snug">
-                    项目名称：{currentProject.name}
-                  </div>
-                  <div className="mt-2 truncate text-[15px] text-white/75">
-                    赛道：{currentProject.track || '—'}
-                    <span className="mx-3 text-white/35">|</span>
-                    导师：{currentProject.mentor || '—'}
-                  </div>
-                </>
-              ) : (
-                <div className="text-[22px] text-white/70">等待组委会指定当前项目</div>
-              )}
-            </div>
-            <div className="shrink-0 text-right">
-              <div className="text-[26px] font-medium tracking-[0.18em]">得分</div>
-              <RevealNumber
-                value={currentRow?.mean}
-                className="font-mono text-[84px] font-extrabold leading-none tabular-nums text-[#ffe14a] xl:text-[108px]"
-                style={{ textShadow: '0 0 22px rgba(255,210,40,0.45), 0 4px 0 rgba(0,0,0,0.18)' }}
-              />
-            </div>
-          </div>
-
-          <div className="flex min-h-0 items-center justify-center gap-4 overflow-x-auto px-2">
-            {judgeCards.length === 0 ? (
-              <div className="text-[16px] text-white/55">尚未配置评委</div>
+        <section className="flex min-h-0 flex-col">
+          <div className="min-w-0 px-6 pt-2">
+            {currentProject ? (
+              <>
+                <div className="text-[22px]">
+                  {t('团队：')}<span className="font-semibold">{currentProject.team || '—'}</span>
+                </div>
+                <div className="mt-1 whitespace-normal break-words text-[26px] font-semibold leading-snug">
+                  {t('项目名称：')}{currentProject.name}
+                </div>
+                <div className="mt-2 text-[15px] text-white/75">
+                  {t('赛道：')}{currentProject.track || '—'}
+                  <span className="mx-3 text-white/35">|</span>
+                  {t('导师：')}{currentProject.mentor || '—'}
+                </div>
+              </>
             ) : (
-              judgeCards.map((card) => <JudgeCard key={card.judgeId} card={card} />)
+              <div className="text-[22px] text-white/70">{t('等待组委会指定当前项目')}</div>
             )}
           </div>
 
-          <div className="mb-10 flex items-center justify-around px-8 pt-1 text-[22px]">
+          <div className="flex justify-center px-6 pt-16 text-center">
             <div>
-              {highLabel}
+              <div className="text-[26px] font-medium tracking-[0.18em]">{t('得分')}</div>
               <RevealNumber
-                value={currentRow?.highest}
-                className="ml-3 font-mono text-[32px] font-extrabold tabular-nums text-[#ffe14a]"
-                style={{ textShadow: '0 0 12px rgba(255,225,74,0.55)' }}
-              />
-            </div>
-            <div>
-              {lowLabel}
-              <RevealNumber
-                value={currentRow?.lowest}
-                className="ml-3 font-mono text-[32px] font-extrabold tabular-nums text-[#ffe14a]"
-                style={{ textShadow: '0 0 12px rgba(255,225,74,0.55)' }}
+                value={currentRow?.mean}
+                className="mt-1 font-mono text-[112px] font-extrabold leading-none tabular-nums text-[#ffe14a] xl:text-[148px]"
+                style={{ textShadow: '0 0 22px rgba(255,210,40,0.45), 0 4px 0 rgba(0,0,0,0.18)' }}
               />
             </div>
           </div>
@@ -196,62 +172,21 @@ export function BoardPage() {
   )
 }
 
-function judgeCardsOf(state) {
-  if (Array.isArray(state?.currentScores) && state.currentScores.length > 0) {
-    return state.currentScores
-  }
-  return (state?.judges ?? []).filter((judge) => judge.active !== false).map((judge) => ({
-    judgeId: judge.id,
-    name: judge.name,
-    org: judge.org,
-    avatar: judge.avatar,
-    score: null,
-  }))
-}
-
-function JudgeCard({ card }) {
-  return (
-    <div className="flex w-[118px] shrink-0 flex-col">
-      <div
-        className="overflow-hidden rounded-[6px] bg-[#e7eaef]"
-        style={{ boxShadow: '0 12px 24px rgba(0,0,0,0.34), 0 2px 6px rgba(0,0,0,0.22)' }}
-      >
-        <div className="relative h-[132px] bg-[#d7dbe2]">
-          {card.avatar ? (
-            <img src={card.avatar} alt="" className="h-full w-full object-cover" />
-          ) : (
-            <svg viewBox="0 0 80 100" className="absolute inset-x-[16%] top-[8%] h-[78%] text-[#aeb6c0]" aria-hidden="true">
-              <circle cx="40" cy="28" r="16" fill="currentColor" />
-              <path d="M10 98c5-26 16-38 30-38s25 12 30 38" fill="currentColor" />
-            </svg>
-          )}
-        </div>
-        <div className="truncate bg-[#d5d9e0] px-1 py-1.5 text-center text-[15px] font-medium text-[#2c3138]">
-          {card.name || '评委'}
-        </div>
-      </div>
-      <RevealNumber
-        value={card.score}
-        className="mt-2.5 block w-full rounded-[6px] bg-white py-1.5 text-center font-mono text-[24px] font-extrabold tabular-nums text-[#f07a1a]"
-        style={{ boxShadow: '0 8px 16px rgba(0,0,0,0.28), 0 1px 3px rgba(0,0,0,0.18)' }}
-      />
-    </div>
-  )
-}
-
 function BoardSkeleton() {
+  const { t } = useI18n()
   return (
     <div className="flex h-dvh items-center justify-center bg-[#071433] text-[16px] text-white/70">
-      正在连接现场数据…
+      {t('正在连接现场数据…')}
     </div>
   )
 }
 
 function BoardError({ error }) {
+  const { t } = useI18n()
   return (
     <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-[#071433] text-white">
-      <div className="text-[18px]">大屏暂时连不上服务</div>
-      <div className="text-[14px] text-white/60">{error?.message || '请检查网络后刷新'}</div>
+      <div className="text-[18px]">{t('大屏暂时连不上服务')}</div>
+      <div className="text-[14px] text-white/60">{error?.message || t('请检查网络后刷新')}</div>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 package com.finvote.service;
 
+import com.finvote.common.LocaleCopy;
 import com.finvote.domain.Competition;
 import com.finvote.domain.Dimension;
 import com.finvote.domain.Judge;
@@ -55,12 +56,13 @@ public class CsvExportService {
 
         StringBuilder sb = new StringBuilder(BOM);
 
+        String[] labels = LocaleCopy.scoreHeaders(competition.getLocale());
         List<String> header = new ArrayList<String>();
-        header.addAll(Arrays.asList("评委", "机构", "项目", "团队", "赛道", "导师"));
+        header.addAll(Arrays.asList(labels[0], labels[1], labels[2], labels[3], labels[4], labels[5]));
         for (Dimension d : dimensions) {
             header.add(d.getName() + "(" + d.getWeight() + "%)");
         }
-        header.addAll(Arrays.asList("加权总分", "提交时间", "更新时间"));
+        header.addAll(Arrays.asList(labels[6], labels[7], labels[8]));
         appendRow(sb, header);
 
         for (ScoreEntry entry : entries) {
@@ -103,8 +105,7 @@ public class CsvExportService {
         List<BoardRowView> rows = stateAssembler.board(projects, judges, entries, competition.rule(), false);
 
         StringBuilder sb = new StringBuilder(BOM);
-        appendRow(sb, Arrays.asList("排名", "项目", "团队", "赛道", "导师", "已提交评委数", "评委总数",
-                "有效评分份数", "最终得分", "最高分", "最低分", "计分规则"));
+        appendRow(sb, Arrays.asList(LocaleCopy.rankingHeaders(competition.getLocale())));
 
         for (BoardRowView row : rows) {
             List<String> line = new ArrayList<String>();
@@ -119,7 +120,7 @@ public class CsvExportService {
             line.add(row.getMean() == null ? "" : format(row.getMean()));
             line.add(row.getHighest() == null ? "" : format(row.getHighest()));
             line.add(row.getLowest() == null ? "" : format(row.getLowest()));
-            line.add(competition.rule().getLabel());
+            line.add(LocaleCopy.ruleLabel(competition.getLocale(), competition.getRuleId()));
             appendRow(sb, line);
         }
         return sb.toString();

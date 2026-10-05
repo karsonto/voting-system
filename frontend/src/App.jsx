@@ -5,6 +5,13 @@ import { AdminPage } from './pages/AdminPage.jsx'
 import { JudgePage } from './pages/JudgePage.jsx'
 import { BoardPage } from './pages/BoardPage.jsx'
 import { NotFoundPage } from './pages/NotFoundPage.jsx'
+import { usePublicState } from './hooks/usePublicState.js'
+
+/** 各页面共用后台选定的语言，评委端和大屏也不会停在默认简体。 */
+function LocaleSync() {
+  usePublicState({ poll: true, interval: 2000 })
+  return null
+}
 
 /**
  * 路由表。
@@ -17,7 +24,9 @@ import { NotFoundPage } from './pages/NotFoundPage.jsx'
  */
 export default function App() {
   return (
-    <Routes>
+    <>
+      <LocaleSync />
+      <Routes>
       <Route path="/board" element={<BoardPage />} />
       <Route path="/judge" element={<JudgePage />} />
 
@@ -30,5 +39,6 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
+    </>
   )
 }
