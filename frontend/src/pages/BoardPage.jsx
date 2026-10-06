@@ -57,36 +57,38 @@ export function BoardPage() {
       />
 
       <style>{REVEAL_CSS}</style>
-      <header className="relative z-10 flex h-[108px] shrink-0 items-center justify-between gap-4 px-6">
-        <img
-          src={icbcLogo}
-          alt="中国工商银行（亚洲）"
-          className="h-[64px] w-auto max-w-[46vw] shrink-0 object-contain object-left"
-        />
-        <div className="min-w-0 flex-1 px-4 text-center [container-type:inline-size]">
+      <header className="relative z-10 flex shrink-0 flex-col gap-2 px-6 pb-2 pt-4">
+        <div className="flex items-center justify-between gap-4">
+          <img
+            src={icbcLogo}
+            alt="中国工商银行（亚洲）"
+            className="h-[44px] w-auto max-w-[40vw] shrink-0 object-contain object-left"
+          />
+          <div className="flex items-center gap-3">
+            <div className="text-right font-mono text-[18px] tabular-nums text-white/80">{clock}</div>
+            <button
+              type="button"
+              className="rounded-sm border border-white/30 px-3 py-1 text-[13px] text-white/85 hover:bg-white/10"
+              onClick={toggleFullscreen}
+            >
+              {t('全屏')}
+            </button>
+            <Link
+              to="/"
+              className="rounded-sm border border-white/30 px-3 py-1 text-[13px] text-white/85 hover:bg-white/10"
+            >
+              {t('返回')}
+            </Link>
+          </div>
+        </div>
+        <div className="text-center [container-type:inline-size]">
           <h1
-            className="truncate text-[clamp(22px,6.2cqi,46px)] font-extrabold tracking-[0.14em] text-[#ffe7a3]"
+            className="whitespace-nowrap text-[clamp(18px,4.6cqw,40px)] font-extrabold tracking-[0.14em] text-[#ffe7a3]"
             style={{ textShadow: '0 0 22px rgba(255,206,70,0.75), 0 3px 0 rgba(90,40,0,0.35)' }}
           >
             {competition?.name || t('Athlon 评分系统')}
           </h1>
           <div className="mx-auto mt-2 h-[3px] w-[min(420px,70%)] bg-gradient-to-r from-transparent via-[#f6c445] to-transparent shadow-[0_0_16px_rgba(246,196,69,0.85)]" />
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="text-right font-mono text-[18px] tabular-nums text-white/80">{clock}</div>
-          <button
-            type="button"
-            className="rounded-sm border border-white/30 px-3 py-1 text-[13px] text-white/85 hover:bg-white/10"
-            onClick={toggleFullscreen}
-          >
-            {t('全屏')}
-          </button>
-          <Link
-            to="/"
-            className="rounded-sm border border-white/30 px-3 py-1 text-[13px] text-white/85 hover:bg-white/10"
-          >
-            {t('返回')}
-          </Link>
         </div>
       </header>
 
@@ -136,7 +138,7 @@ export function BoardPage() {
         </section>
 
         <section className="flex min-h-0 flex-col">
-          <div className="min-w-0 px-6 pt-2">
+          <div className="min-w-0 px-6 pt-4">
             {currentProject ? (
               <>
                 <div className="text-[22px]">
