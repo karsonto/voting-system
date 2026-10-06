@@ -41,7 +41,12 @@ export function BoardPage() {
   const competition = state?.competition
   const currentProject = (state?.projects ?? []).find((p) => p.id === state?.currentProjectId) ?? null
   const currentRow = (state?.board ?? []).find((row) => row.projectId === state?.currentProjectId) ?? null
-  const ranked = (state?.board ?? []).filter((row) => row.submittedCount > 0 && row.mean != null)
+  const ranked = (state?.board ?? []).filter(
+    (row) =>
+      row.judgeCount > 0 &&
+      row.submittedCount >= row.judgeCount &&
+      row.mean != null,
+  )
 
   return (
     <div className="relative flex h-dvh max-h-dvh flex-col overflow-hidden text-white">
@@ -165,7 +170,11 @@ export function BoardPage() {
             <div>
               <div className="text-[26px] font-medium tracking-[0.18em]">{t('得分')}</div>
               <RevealNumber
-                value={currentRow?.mean}
+                value={
+                  currentRow && currentRow.judgeCount > 0 && currentRow.submittedCount >= currentRow.judgeCount
+                    ? currentRow.mean
+                    : null
+                }
                 className="mt-1 font-mono text-[112px] font-extrabold leading-none tabular-nums text-[#ffe14a] xl:text-[148px]"
                 style={{ textShadow: '0 0 22px rgba(255,210,40,0.45), 0 4px 0 rgba(0,0,0,0.18)' }}
               />
@@ -214,7 +223,7 @@ function RevealNumber({ value, className = '', style }) {
   return (
     <span className={className} style={style}>
       <span key={token} className={token ? 'fv-reveal inline-block' : 'inline-block'}>
-        {formatScore(value, 2, '0.00')}
+        {formatScore(value, 2, '—')}
       </span>
     </span>
   )
