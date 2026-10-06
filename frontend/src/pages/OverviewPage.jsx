@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { usePublicState } from '../hooks/usePublicState.js'
-import { CountdownWidget } from '../components/CountdownWidget.jsx'
 import { EmptyState, Kpi, Pill, ProgressRow } from '../components/ui.jsx'
 import { pad2, percent } from '../lib/format.js'
 import { useI18n } from '../i18n/index.js'
@@ -63,7 +62,6 @@ export function OverviewPage() {
 
   return (
     <div>
-      <CountdownWidget competition={competition} />
       <section className="border-b border-line">
         <div className="mx-auto max-w-[1200px] px-8 py-14 max-md:px-4">
           <p className="eyebrow">{t('ATHLON · 组委会工作台')}</p>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { CountdownWidget } from '../components/CountdownWidget.jsx'
 import { usePublicState } from '../hooks/usePublicState.js'
 import { currentClock, formatScore } from '../lib/format.js'
 import icbcLogo from '../assets/icbc-asia-logo.png'
@@ -91,6 +92,8 @@ export function BoardPage() {
           <div className="mx-auto mt-2 h-[3px] w-[min(420px,70%)] bg-gradient-to-r from-transparent via-[#f6c445] to-transparent shadow-[0_0_16px_rgba(246,196,69,0.85)]" />
         </div>
       </header>
+
+      <CountdownWidget competition={competition} className="bottom-6 left-6" dark />
 
       <main className="relative z-10 grid min-h-0 flex-1 grid-cols-1 items-stretch gap-5 px-6 pb-5 lg:grid-cols-[minmax(320px,400px)_minmax(0,1fr)] lg:grid-rows-1">
         <section
