@@ -178,6 +178,7 @@ export const zhHant = {
   '每场演讲限时 {minutes} 分钟，归零停在 00:00 并提示「时间到」，不会自动改变任何状态。':
     '每場演講限時 {minutes} 分鐘，歸零停在 00:00 並提示「時間到」，不會自動改變任何狀態。',
   '未设置倒计时': '未設置倒計時',
+'未设置': '未設置',
   '倒计时时长（分钟）': '倒計時時長（分鐘）',
   '开始倒计时': '開始倒計時',
   '暂停': '暫停',
@@ -625,6 +626,7 @@ export const en = {
   '每场演讲限时 {minutes} 分钟，归零停在 00:00 并提示「时间到」，不会自动改变任何状态。':
     'Each speech is limited to {minutes} minutes. At zero it stops at 00:00 with a “Time” notice and changes nothing automatically.',
   '未设置倒计时': 'No countdown set',
+'未设置': 'Not set',
   '倒计时时长（分钟）': 'Countdown length (minutes)',
   '开始倒计时': 'Start countdown',
   '暂停': 'Pause',

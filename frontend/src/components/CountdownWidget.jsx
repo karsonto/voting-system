@@ -21,7 +21,7 @@ export function CountdownWidget({ competition }) {
     return () => window.clearInterval(id)
   }, [running])
 
-  if (minutes <= 0 && !running) return null
+  const configured = minutes > 0
 
   const remainingMs = running ? Math.max(0, endAt - now) : (minutes * 60 * 1000)
   const totalSec = Math.ceil(remainingMs / 1000)
@@ -36,7 +36,8 @@ export function CountdownWidget({ competition }) {
   if (timeUp) label = t('时间到')
   else if (paused) label = t('已暂停')
   else if (running) label = t('正在倒数中…')
-  else label = t('未开始')
+  else if (configured) label = t('未开始')
+  else label = t('未设置')
 
   return (
     <div
@@ -44,9 +45,13 @@ export function CountdownWidget({ competition }) {
       role="timer"
       aria-live="polite"
     >
-      <span className={`font-mono text-[26px] font-semibold leading-none tnum ${tone}`}>
-        {mm}:{ss}
-      </span>
+      {configured ? (
+        <span className={`font-mono text-[26px] font-semibold leading-none tnum ${tone}`}>
+          {mm}:{ss}
+        </span>
+      ) : (
+        <span className="text-[12px] text-ink-muted">—:—</span>
+      )}
       <span className={`text-[12px] ${tone}`}>{label}</span>
     </div>
   )

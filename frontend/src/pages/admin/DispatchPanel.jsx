@@ -3,6 +3,19 @@ import { EmptyState, Pill, ProgressRow } from '../../components/ui.jsx'
 import { pad2, percent } from '../../lib/format.js'
 import { useI18n } from '../../i18n/index.js'
 
+/** 毫秒剩余 → MM:SS */
+function fmtRemaining(endAt) {
+  const ms = Math.max(0, endAt - Date.now())
+  const total = Math.ceil(ms / 1000)
+  return `${pad2(Math.floor(total / 60))}:${pad2(total % 60)}`
+}
+
+/** 分钟数 → MM:SS */
+function fmtMinutes(m) {
+  const total = Math.max(0, Math.round(Number(m) || 0) * 60)
+  return `${pad2(Math.floor(total / 60))}:${pad2(total % 60)}`
+}
+
 /**
  * 实时调度台：把评委切到某个项目，评委端与大屏会自动同步。
  *
@@ -20,6 +33,7 @@ export function DispatchPanel({
   onDispatchOne,
   onNext,
   onClearScore,
+  onCountdown,
   busy,
 }) {
   const { t } = useI18n()
@@ -28,6 +42,15 @@ export function DispatchPanel({
   )
 
   const currentProject = projects.find((p) => p.id === currentProjectId)
+
+  const countdownMinutes = competition?.countdownMinutes ?? 0
+  const countdownRunning = !!competition?.countdownRunning
+  const countdownEndAt = competition?.countdownEndAt ?? 0
+  const [minutes, setMinutes] = useState(countdownMinutes)
+
+  async function handleCountdownAction(action) {
+    await onCountdown({ minutes: Number(minutes) || 0, action })
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -54,6 +77,60 @@ export function DispatchPanel({
             </span>
           </label>
           <p className="hint">{t('已提交的分数会保留。通道关闭时，评委端不能再提交或修改评分。')}</p>
+        </div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-head">
+          <span className="panel-title">{t('演讲倒计时')}</span>
+          {countdownRunning
+            ? <Pill tone="info" live>{t('正在倒数中…')}</Pill>
+            : countdownMinutes > 0
+              ? <Pill tone="warn">{t('已暂停')}</Pill>
+              : <Pill tone="idle">{t('未开始')}</Pill>}
+        </div>
+        <div className="panel-body flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <input
+              className="input input-num w-[84px] text-center"
+              type="number"
+              min="0"
+              max="180"
+              value={minutes}
+              onChange={(e) => setMinutes(e.target.value)}
+              aria-label={t('倒计时时长（分钟）')}
+            />
+            <span className="hint">{t('分钟')}</span>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm ml-auto"
+              onClick={() => handleCountdownAction('start')}
+              disabled={busy || Number(minutes) <= 0}
+            >
+              {t('开始倒计时')}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={() => handleCountdownAction('pause')}
+              disabled={busy || !countdownRunning}
+            >
+              {t('暂停')}
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => handleCountdownAction('reset')}
+              disabled={busy}
+            >
+              {t('重置')}
+            </button>
+          </div>
+          <p className="hint">
+            {t('每场演讲限时 {minutes} 分钟，归零停在 00:00 并提示「时间到」，不会自动改变任何状态。', {
+              minutes: countdownMinutes || minutes,
+            })}
+          </p>
         </div>
       </div>
 

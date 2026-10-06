@@ -409,6 +409,7 @@ export function AdminPage() {
               onDispatchOne={handleDispatchOne}
               onNext={handleDispatchNext}
               onClearScore={handleClearScore}
+              onCountdown={handleCountdown}
               busy={busy}
             />
           )}
