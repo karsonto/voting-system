@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { usePublicState } from '../hooks/usePublicState.js'
+import { CountdownWidget } from '../components/CountdownWidget.jsx'
 import { EmptyState, Kpi, Pill, ProgressRow } from '../components/ui.jsx'
 import { pad2, percent } from '../lib/format.js'
 import { useI18n } from '../i18n/index.js'
@@ -62,6 +63,7 @@ export function OverviewPage() {
 
   return (
     <div>
+      <CountdownWidget competition={competition} />
       <section className="border-b border-line">
         <div className="mx-auto max-w-[1200px] px-8 py-14 max-md:px-4">
           <p className="eyebrow">{t('ATHLON · 组委会工作台')}</p>
@@ -286,7 +288,9 @@ export function OverviewPage() {
                       {t('{done}/{total} 已评', { done: row.submittedCount, total: row.judgeCount })}
                     </span>
                     <span className="w-[86px] text-right font-mono text-[13px] font-semibold tnum">
-                      {row.mean != null ? t('{score} 分', { score: row.mean.toFixed(2) }) : t('未评分')}
+                      {row.mean != null && row.judgeCount > 0 && row.submittedCount >= row.judgeCount
+                        ? t('{score} 分', { score: row.mean.toFixed(2) })
+                        : t('评分中…')}
                     </span>
                   </div>
                 ))

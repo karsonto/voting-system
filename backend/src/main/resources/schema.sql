@@ -20,19 +20,23 @@ CREATE TABLE IF NOT EXISTS app_user (
 -- ---------------------------------------------------------------------------
 -- 赛事（当前实现为单赛事，保留多赛事扩展能力）
 -- version 全局自增版本号，前端据此判断是否需要刷新（实时同步用）
+-- countdown_* 为演讲倒计时：end_at 是毫秒 epoch，running 时有效
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS competition (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    name       TEXT    NOT NULL,
-    stage      TEXT    NOT NULL DEFAULT '',
-    scale_id   TEXT    NOT NULL DEFAULT 'weighted-100',
-    rule_id    TEXT    NOT NULL DEFAULT 'trimmed-mean',
-    is_open    INTEGER NOT NULL DEFAULT 1,
-    revealed   INTEGER NOT NULL DEFAULT 0,
-    locale     TEXT    NOT NULL DEFAULT 'zh-Hans',
-    version    INTEGER NOT NULL DEFAULT 0,
-    updated_at INTEGER NOT NULL,
-    created_at INTEGER NOT NULL
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                TEXT    NOT NULL,
+    stage               TEXT    NOT NULL DEFAULT '',
+    scale_id            TEXT    NOT NULL DEFAULT 'weighted-100',
+    rule_id             TEXT    NOT NULL DEFAULT 'trimmed-mean',
+    is_open             INTEGER NOT NULL DEFAULT 1,
+    revealed            INTEGER NOT NULL DEFAULT 0,
+    locale              TEXT    NOT NULL DEFAULT 'zh-Hans',
+    countdown_minutes   INTEGER NOT NULL DEFAULT 0,
+    countdown_running   INTEGER NOT NULL DEFAULT 0,
+    countdown_end_at    INTEGER NOT NULL DEFAULT 0,
+    version             INTEGER NOT NULL DEFAULT 0,
+    updated_at          INTEGER NOT NULL,
+    created_at          INTEGER NOT NULL
 );
 
 -- ---------------------------------------------------------------------------

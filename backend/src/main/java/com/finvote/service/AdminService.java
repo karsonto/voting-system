@@ -109,6 +109,60 @@ public class AdminService {
         competitionService.touch();
     }
 
+    @Transactional
+    public void updateCountdown(Integer minutes, String action) {
+        Competition competition = competitionService.current();
+        Long id = competition.getId();
+        int currentMinutes = competition.getCountdownMinutes();
+        boolean running = competition.isCountdownRunning();
+        long endAt = competition.getCountdownEndAt();
+
+        // 若传了新的时长，先落库
+        if (minutes != null) {
+            int m = Math.max(0, minutes);
+            if (m != currentMinutes) {
+                currentMinutes = m;
+                // 时长变化时若正在运行，按新时长重算截止时间
+                if (running) {
+                    endAt = System.currentTimeMillis() + (long) m * 60_000L;
+                }
+            }
+        }
+
+        String act = action == null ? "" : action.trim().toLowerCase();
+        switch (act) {
+            case "start":
+                if (currentMinutes <= 0) {
+                    throw ApiException.badRequest("请先设置倒计时时长（分钟）");
+                }
+                endAt = System.currentTimeMillis() + (long) currentMinutes * 60_000L;
+                running = true;
+                break;
+            case "pause":
+                // 保留剩余：把当前剩余分钟数写回时长，停止运行
+                if (running && endAt > 0) {
+                    long remainingMs = Math.max(0L, endAt - System.currentTimeMillis());
+                    // 保留整分钟（向上取整到秒精度），0 表示已到
+                    currentMinutes = (int) Math.ceil(remainingMs / 60_000.0);
+                }
+                running = false;
+                endAt = 0;
+                break;
+            case "reset":
+                running = false;
+                endAt = 0;
+                break;
+            case "":
+                // 只保存时长，不改运行状态
+                break;
+            default:
+                throw ApiException.badRequest("未知的倒计时操作");
+        }
+
+        competitionService.updateCountdown(id, currentMinutes, running, endAt);
+        competitionService.touch();
+    }
+
     // ---------------------------------------------------------------- 维度
 
     @Transactional

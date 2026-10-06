@@ -17,7 +17,9 @@ import java.util.List;
 public class CompetitionRepository {
 
     private static final String COLUMNS =
-            "id, name, stage, scale_id, rule_id, is_open, revealed, locale, version, updated_at, created_at";
+            "id, name, stage, scale_id, rule_id, is_open, revealed, locale, "
+                    + "countdown_minutes, countdown_running, countdown_end_at, "
+                    + "version, updated_at, created_at";
 
     private static final RowMapper<Competition> ROW_MAPPER = (rs, rowNum) -> {
         Competition c = new Competition();
@@ -29,6 +31,9 @@ public class CompetitionRepository {
         c.setOpen(rs.getInt("is_open") == 1);
         c.setRevealed(rs.getInt("revealed") == 1);
         c.setLocale(rs.getString("locale"));
+        c.setCountdownMinutes(rs.getInt("countdown_minutes"));
+        c.setCountdownRunning(rs.getInt("countdown_running") == 1);
+        c.setCountdownEndAt(rs.getLong("countdown_end_at"));
         c.setVersion(rs.getLong("version"));
         c.setUpdatedAt(rs.getLong("updated_at"));
         c.setCreatedAt(rs.getLong("created_at"));
@@ -63,8 +68,10 @@ public class CompetitionRepository {
 
     public Long insert(Competition c) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        namedJdbc.update("INSERT INTO competition (name, stage, scale_id, rule_id, is_open, revealed, locale, version, updated_at, created_at) "
-                        + "VALUES (:name, :stage, :scaleId, :ruleId, :open, :revealed, :locale, :version, :updatedAt, :createdAt)",
+        namedJdbc.update("INSERT INTO competition (name, stage, scale_id, rule_id, is_open, revealed, locale, "
+                        + "countdown_minutes, countdown_running, countdown_end_at, version, updated_at, created_at) "
+                        + "VALUES (:name, :stage, :scaleId, :ruleId, :open, :revealed, :locale, "
+                        + ":countdownMinutes, :countdownRunning, :countdownEndAt, :version, :updatedAt, :createdAt)",
                 new MapSqlParameterSource()
                         .addValue("name", c.getName())
                         .addValue("stage", c.getStage())
@@ -73,6 +80,9 @@ public class CompetitionRepository {
                         .addValue("open", c.isOpen() ? 1 : 0)
                         .addValue("revealed", c.isRevealed() ? 1 : 0)
                         .addValue("locale", c.getLocale() == null ? "zh-Hans" : c.getLocale())
+                        .addValue("countdownMinutes", c.getCountdownMinutes())
+                        .addValue("countdownRunning", c.isCountdownRunning() ? 1 : 0)
+                        .addValue("countdownEndAt", c.getCountdownEndAt())
                         .addValue("version", c.getVersion())
                         .addValue("updatedAt", c.getUpdatedAt())
                         .addValue("createdAt", c.getCreatedAt()),
@@ -111,7 +121,19 @@ public class CompetitionRepository {
         namedJdbc.update(sql.toString(), params);
     }
 
-    /** 閫掑璧涗簨鑷韩鐨勭増鏈彿锛堝墠绔睍绀虹殑 rev锛夈€?*/
+    /** 更新倒计时配置：时长（分钟）、是否运行、截止时间（毫秒 epoch）。 */
+    public void updateCountdown(Long id, int minutes, boolean running, long endAt) {
+        namedJdbc.update("UPDATE competition SET countdown_minutes = :minutes, "
+                        + "countdown_running = :running, countdown_end_at = :endAt, "
+                        + "updated_at = :updatedAt WHERE id = :id",
+                new MapSqlParameterSource()
+                        .addValue("id", id)
+                        .addValue("minutes", Math.max(0, minutes))
+                        .addValue("running", running ? 1 : 0)
+                        .addValue("endAt", Math.max(0L, endAt))
+                        .addValue("updatedAt", System.currentTimeMillis()));
+    }
+
     public void bumpVersion(Long id) {
         jdbcTemplate.update("UPDATE competition SET version = version + 1 WHERE id = ?", id);
     }

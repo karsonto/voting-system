@@ -69,6 +69,9 @@ public class StateAssembler {
         view.setRevealed(competition.isRevealed());
         view.setLocale(competition.getLocale() == null || competition.getLocale().trim().isEmpty()
                 ? "zh-Hans" : competition.getLocale());
+        view.setCountdownMinutes(competition.getCountdownMinutes());
+        view.setCountdownRunning(competition.isCountdownRunning());
+        view.setCountdownEndAt(competition.getCountdownEndAt());
         view.setRev(competition.getVersion());
         view.setUpdatedAt(competition.getUpdatedAt());
         view.setVersion(competition.getVersion());

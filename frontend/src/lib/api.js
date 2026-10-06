@@ -208,6 +208,9 @@ export const adminApi = {
   updateSwitches: (payload) =>
     request('/api/admin/switches', { method: 'PUT', role: 'ADMIN', body: payload }),
 
+  updateCountdown: (payload) =>
+    request('/api/admin/countdown', { method: 'PUT', role: 'ADMIN', body: payload }),
+
   addDimension: (payload) => request('/api/admin/dimensions', { method: 'POST', role: 'ADMIN', body: payload }),
   updateDimension: (id, payload) =>
     request(`/api/admin/dimensions/${id}`, { method: 'PUT', role: 'ADMIN', body: payload }),

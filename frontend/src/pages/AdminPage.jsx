@@ -59,6 +59,11 @@ export function AdminPage() {
 
   const handleSaveInfo = (payload) => run(() => adminApi.updateCompetition(payload))
 
+  const handleCountdown = (payload) => {
+    const actionLabel = { start: t('倒计时已开始'), pause: t('倒计时已暂停'), reset: t('倒计时已重置') }
+    return run(() => adminApi.updateCountdown(payload), actionLabel[payload.action] || t('倒计时已更新'))
+  }
+
   const handleApplyScale = (projectCount, judgeCountValue) =>
     run(
       () => adminApi.applyScale(projectCount, judgeCountValue),
@@ -345,6 +350,7 @@ export function AdminPage() {
                   stats={stats}
                   onSave={handleSaveInfo}
                   onApplyScale={handleApplyScale}
+                  onCountdown={handleCountdown}
                   busy={busy}
                   toast={show}
                 />

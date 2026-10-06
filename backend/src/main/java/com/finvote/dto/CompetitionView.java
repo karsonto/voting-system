@@ -27,6 +27,12 @@ public class CompetitionView {
     private boolean revealed;
     /** 界面语言：zh-Hans / zh-Hant / en。 */
     private String locale;
+    /** 倒计时时长（分钟），0 表示未配置。 */
+    private int countdownMinutes;
+    /** 倒计时是否正在运行。 */
+    private boolean countdownRunning;
+    /** 倒计时截止时间（毫秒 epoch），前端用它计算剩余时间。 */
+    private long countdownEndAt;
     /** 赛事自身的修订号，与全局 version 一同用于前端判断刷新。 */
     private long rev;
     private long updatedAt;

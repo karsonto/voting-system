@@ -75,6 +75,10 @@ public class CompetitionService {
         competitionRepository.updateSwitches(id, open, revealed);
     }
 
+    public void updateCountdown(Long id, int minutes, boolean running, long endAt) {
+        competitionRepository.updateCountdown(id, minutes, running, endAt);
+    }
+
     /** 递增版本号，标记数据已变更。 */
     public long touch() {
         Competition competition = current();

@@ -8,6 +8,7 @@ import com.finvote.domain.ScoreEntry;
 import com.finvote.dto.AdminStateResponse;
 import com.finvote.dto.ScoreView;
 import com.finvote.dto.request.CompetitionUpdateRequest;
+import com.finvote.dto.request.CountdownRequest;
 import com.finvote.dto.request.DimensionRequest;
 import com.finvote.dto.request.DispatchRequest;
 import com.finvote.dto.request.JudgeRequest;
@@ -100,6 +101,12 @@ public class AdminController {
     @PutMapping("/switches")
     public Map<String, Object> updateSwitches(@RequestBody SwitchUpdateRequest request) {
         adminService.updateSwitches(request.getOpen(), request.getRevealed());
+        return ok();
+    }
+
+    @PutMapping("/countdown")
+    public Map<String, Object> updateCountdown(@RequestBody CountdownRequest request) {
+        adminService.updateCountdown(request.getMinutes(), request.getAction());
         return ok();
     }
 
