@@ -225,7 +225,7 @@ function ScoringConsole({ onLogout, toast }) {
       const fromDraft = draft?.values?.[dimension.id]
       if (typeof fromDraft === 'number') next[dimension.id] = fromDraft
       else if (typeof fromScore === 'number') next[dimension.id] = fromScore
-      else next[dimension.id] = Math.round(maxScore * 0.8) // 与设计稿一致：默认 80% 分值
+      else next[dimension.id] = Math.round(dimension.weight * 8) / 10 // 默认 80% 分值（满分=权重）
     })
     setFormValues(next)
 
@@ -238,24 +238,23 @@ function ScoringConsole({ onLogout, toast }) {
   }, [currentProjectId, dimensions.map((d) => d.id).join(',')])
 
   const weightedTotal = useMemo(() => {
-    let weighted = 0
-    let weight = 0
+    let total = 0
+    let counted = 0
     dimensions.forEach((dimension) => {
       const value = formValues[dimension.id]
       if (typeof value !== 'number') return
-      weighted += value * dimension.weight
-      weight += dimension.weight
+      total += value
+      counted += 1
     })
-    if (weight > 0) return weighted / weight
-    const values = Object.values(formValues).filter((v) => typeof v === 'number')
-    return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0
+    return counted > 0 ? Math.round(total * 10) / 10 : 0
   }, [dimensions, formValues])
 
   const weightSum = competition?.dimensionWeightSum ?? 0
   const allScored = dimensions.every((d) => typeof formValues[d.id] === 'number')
 
   function updateValue(dimensionId, rawValue) {
-    const value = clampScore(rawValue, maxScore)
+    const dim = dimensions.find((d) => d.id === dimensionId)
+    const value = clampScore(rawValue, dim ? dim.weight : maxScore)
     setFormValues((previous) => {
       const next = { ...previous, [dimensionId]: value }
       if (currentProjectId) write(currentProjectId, { values: next })
@@ -383,7 +382,7 @@ function ScoringConsole({ onLogout, toast }) {
             <div className="panel-head shrink-0 py-2.5">
               <span className="panel-title">{t('多维度打分')}</span>
               <span className="meta">
-                {t('0–{max} · 权重 {weight}%', { max: maxScore, weight: weightSum })}
+                {t('维度满分 = 权重 · 合计 {weight}%', { weight: weightSum })}
               </span>
             </div>
             <div className="flex min-h-0 flex-1 flex-col justify-evenly px-4 py-1">
@@ -394,7 +393,7 @@ function ScoringConsole({ onLogout, toast }) {
                   <DimensionControl
                     key={dimension.id}
                     dimension={dimension}
-                    max={maxScore}
+                    max={dimension.weight}
                     value={formValues[dimension.id]}
                     disabled={!currentProjectId}
                     onChange={(value) => updateValue(dimension.id, value)}
@@ -521,7 +520,8 @@ function sameId(left, right) {
 /** 单个维度的滑杆 + 数值输入。行高随剩余空间收缩，保证整页不出现滚动条。 */
 function DimensionControl({ dimension, value, max, disabled, onChange }) {
   const { t } = useI18n()
-  const safeValue = typeof value === 'number' ? value : Math.round(max * 0.8)
+  // 默认分 = 该维度满分的 80%（按 0.1 步幅收敛，避免浮点噪声）
+  const safeValue = typeof value === 'number' ? value : Math.round(max * 8) / 10
 
   return (
     <div className="min-h-0 py-1">

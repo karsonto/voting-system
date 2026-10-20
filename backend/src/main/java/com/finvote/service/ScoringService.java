@@ -56,13 +56,13 @@ public class ScoringService {
         }
 
         Map<Long, Double> values = new LinkedHashMap<Long, Double>();
-        double max = competition.scale().getMaxPerDimension();
         for (Dimension dimension : dimensions) {
             Double value = rawValues == null ? null : rawValues.get(dimension.getId());
             if (value == null) {
                 throw ApiException.badRequest("维度「" + dimension.getName() + "」尚未打分");
             }
-            // 收敛到 0.1 步幅：消除前端浮点误差（如 73.50000000000001），并校验范围
+            // 每个维度的满分即其权重（权重 30% → 满分 30 分）；收敛到 0.1 步幅并校验范围
+            double max = dimension.getWeight();
             double snapped = snapToTenth(value);
             if (snapped < 0 || snapped > max) {
                 throw ApiException.badRequest("维度「" + dimension.getName() + "」的得分需在 0–" + max + " 之间");
