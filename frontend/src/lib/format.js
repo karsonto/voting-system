@@ -58,9 +58,11 @@ export function joinText(...parts) {
   return parts.filter((p) => p !== null && p !== undefined && String(p).trim() !== '').join(' · ')
 }
 
-/** 把分数收敛到 0–max 的整数区间（后端按整数分存储）。 */
+/** 把分数收敛到 0–max，步幅 0.1（后端按 0.1 精度存储）。 */
 export function clampScore(value, max = 100) {
-  const n = Math.round(Number(value))
+  const n = Number(value)
   if (!Number.isFinite(n)) return 0
-  return Math.max(0, Math.min(max, n))
+  // 收敛到 0.1 的整数倍，消除浮点噪声（73.50000000000001 → 73.5）
+  const snapped = Math.round(n * 10) / 10
+  return Math.max(0, Math.min(max, snapped))
 }

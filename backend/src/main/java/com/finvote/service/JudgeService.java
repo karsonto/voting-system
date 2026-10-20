@@ -97,7 +97,7 @@ public class JudgeService {
 
         Map<Long, Project> projectIndex = stateAssembler.indexProjects(projects);
         Map<Long, Judge> judgeIndex = stateAssembler.indexJudges(judges);
-        Map<Long, Map<Long, Integer>> items = scoreRepository.findAllItems(competition.getId());
+        Map<Long, Map<Long, Double>> items = scoreRepository.findAllItems(competition.getId());
         Map<Long, Integer> submittedByProject = stateAssembler.submittedCountByProject(entries);
 
         JudgeSessionResponse response = new JudgeSessionResponse();

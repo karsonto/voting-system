@@ -84,7 +84,7 @@ public class ScoreRepository {
         return key == null ? null : key.longValue();
     }
 
-    public void insertItem(Long scoreId, Long dimensionId, int value) {
+    public void insertItem(Long scoreId, Long dimensionId, double value) {
         jdbcTemplate.update("INSERT INTO score_item (score_id, dimension_id, value) VALUES (?, ?, ?)",
                 scoreId, dimensionId, value);
     }
@@ -96,19 +96,19 @@ public class ScoreRepository {
     }
 
     /** 一次性查出所有评分单的逐维度得分，key = scoreId。 */
-    public Map<Long, Map<Long, Integer>> findAllItems(Long competitionId) {
-        Map<Long, Map<Long, Integer>> result = new HashMap<Long, Map<Long, Integer>>();
+    public Map<Long, Map<Long, Double>> findAllItems(Long competitionId) {
+        Map<Long, Map<Long, Double>> result = new HashMap<Long, Map<Long, Double>>();
         jdbcTemplate.query(
                 "SELECT si.score_id, si.dimension_id, si.value FROM score_item si "
                         + "JOIN score s ON s.id = si.score_id WHERE s.competition_id = ?",
                 rs -> {
                     Long scoreId = rs.getLong("score_id");
-                    Map<Long, Integer> items = result.get(scoreId);
+                    Map<Long, Double> items = result.get(scoreId);
                     if (items == null) {
-                        items = new HashMap<Long, Integer>();
+                        items = new HashMap<Long, Double>();
                         result.put(scoreId, items);
                     }
-                    items.put(rs.getLong("dimension_id"), rs.getInt("value"));
+                    items.put(rs.getLong("dimension_id"), rs.getDouble("value"));
                 }, competitionId);
         return result;
     }

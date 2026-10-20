@@ -106,12 +106,13 @@ CREATE INDEX IF NOT EXISTS idx_score_judge ON score (judge_id);
 
 -- ---------------------------------------------------------------------------
 -- 评分单的逐维度得分
+-- 说明：value 用 REAL（不要用 DOUBLE——SQLite 中 DOUBLE 是 NUMERIC 的同名，会把 0.1 存成整数 1）
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS score_item (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     score_id     INTEGER NOT NULL,
     dimension_id INTEGER NOT NULL,
-    value        INTEGER NOT NULL,
+    value        REAL    NOT NULL,
     UNIQUE (score_id, dimension_id),
     FOREIGN KEY (score_id) REFERENCES score (id) ON DELETE CASCADE,
     FOREIGN KEY (dimension_id) REFERENCES dimension (id) ON DELETE CASCADE

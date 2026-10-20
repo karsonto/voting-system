@@ -169,6 +169,64 @@
     @apply inline-flex cursor-pointer select-none items-center gap-3;
   }
 
+  /* 评分滑杆：本体轨道透明（露出底下自绘的轨道+填充），只保留可见的拇指 */
+  .score-range {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+  }
+
+  .score-range::-webkit-slider-runnable-track {
+    -webkit-appearance: none;
+    height: 100%;
+    background: transparent;
+    border: none;
+  }
+
+  .score-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 18px;
+    width: 18px;
+    margin-top: 13px; /* (44px 容器高 - 18px 拇指高) / 2；轨道 h-4 居中 */
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid var(--color-brand-500, #2563eb);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    transition: transform 0.1s ease;
+  }
+
+  .score-range::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+  }
+
+  .score-range::-moz-range-track {
+    height: 100%;
+    background: transparent;
+    border: none;
+  }
+
+  .score-range::-moz-range-thumb {
+    height: 18px;
+    width: 18px;
+    border-radius: 9999px;
+    background: #fff;
+    border: 2px solid var(--color-brand-500, #2563eb);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+  }
+
+  .score-range:disabled::-webkit-slider-thumb {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .score-range:disabled::-moz-range-thumb {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
   .switch-track {
     @apply relative h-[23px] w-[42px] shrink-0 rounded-full bg-ink/20 transition-colors;
   }

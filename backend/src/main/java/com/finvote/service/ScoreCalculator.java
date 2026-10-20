@@ -27,7 +27,7 @@ public final class ScoreCalculator {
      * <p>公式：&sum;(得分 &times; 权重) / &sum;(权重)。权重合计为 0 时退化为算术平均，
      * 保证「维度全部为 0 权重」这种异常配置下仍能得到一个可解释的分数。</p>
      */
-    public static double weightedTotal(List<Dimension> dimensions, Map<Long, Integer> values) {
+    public static double weightedTotal(List<Dimension> dimensions, Map<Long, Double> values) {
         if (dimensions == null || dimensions.isEmpty()) {
             return 0d;
         }
@@ -37,7 +37,7 @@ public final class ScoreCalculator {
         int counted = 0;
 
         for (Dimension d : dimensions) {
-            Integer value = values == null ? null : values.get(d.getId());
+            Double value = values == null ? null : values.get(d.getId());
             if (value == null) {
                 continue;
             }

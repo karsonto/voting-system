@@ -20,5 +20,5 @@ public class ScoreView {
     private double weightedTotal;
     private long createdAt;
     private long updatedAt;
-    private Map<Long, Integer> values = new LinkedHashMap<Long, Integer>();
+    private Map<Long, Double> values = new LinkedHashMap<Long, Double>();
 }

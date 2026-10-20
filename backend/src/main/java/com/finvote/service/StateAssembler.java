@@ -189,7 +189,7 @@ public class StateAssembler {
 
     /** 把评分单与逐维度得分拼成视图。 */
     public List<ScoreView> scores(List<ScoreEntry> entries,
-                                  Map<Long, Map<Long, Integer>> items,
+                                  Map<Long, Map<Long, Double>> items,
                                   Map<Long, Project> projectIndex,
                                   Map<Long, Judge> judgeIndex) {
         List<ScoreView> list = new ArrayList<ScoreView>();
@@ -200,7 +200,7 @@ public class StateAssembler {
     }
 
     public ScoreView scoreView(ScoreEntry entry,
-                               Map<Long, Integer> values,
+                               Map<Long, Double> values,
                                Map<Long, Project> projectIndex,
                                Map<Long, Judge> judgeIndex) {
         ScoreView v = new ScoreView();
@@ -217,7 +217,7 @@ public class StateAssembler {
         Project project = projectIndex.get(entry.getProjectId());
         v.setProjectName(project == null ? null : project.getName());
 
-        Map<Long, Integer> ordered = new LinkedHashMap<Long, Integer>();
+        Map<Long, Double> ordered = new LinkedHashMap<Long, Double>();
         if (values != null) {
             ordered.putAll(values);
         }
@@ -397,7 +397,7 @@ public class StateAssembler {
         if (target == null) {
             return null;
         }
-        Map<Long, Map<Long, Integer>> items = scoreRepository.findAllItems(competitionId);
+        Map<Long, Map<Long, Double>> items = scoreRepository.findAllItems(competitionId);
         return scoreView(target, items.get(target.getId()),
                 indexProjects(loadProjects(competitionId)), indexJudges(loadJudges(competitionId)));
     }
@@ -475,7 +475,7 @@ public class StateAssembler {
         response.setDimensions(dimensions(dimensions));
         response.setProjects(projects(projects, submittedCountByProject(entries), judges.size()));
 
-        Map<Long, Map<Long, Integer>> items = scoreRepository.findAllItems(competition.getId());
+        Map<Long, Map<Long, Double>> items = scoreRepository.findAllItems(competition.getId());
         response.setJudges(judgesAdmin(judges, scoresByJudge(entries)));
 
         Map<Long, Project> projectIndex = indexProjects(projects);

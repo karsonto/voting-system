@@ -446,7 +446,7 @@ public class AdminService {
 
     /** 维度变更后重算全部评分单的加权总分。 */
     private void recalculateAllScores(Long competitionId, List<Dimension> dimensions) {
-        Map<Long, Map<Long, Integer>> allItems = scoreRepository.findAllItems(competitionId);
+        Map<Long, Map<Long, Double>> allItems = scoreRepository.findAllItems(competitionId);
         for (ScoreEntry entry : scoreRepository.findByCompetition(competitionId)) {
             double total = ScoreCalculator.weightedTotal(dimensions, allItems.get(entry.getId()));
             scoreRepository.updateWeightedTotal(entry.getId(), total);

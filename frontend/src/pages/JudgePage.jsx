@@ -200,6 +200,7 @@ function ScoringConsole({ onLogout, toast }) {
   const [formValues, setFormValues] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [historyId, setHistoryId] = useState(null)
+  const [listOrder, setListOrder] = useState('dispatch')
 
   // 记录上一轮的项目 ID，用于判断「是否被调度切换」
   const lastProjectIdRef = useRef(null)
@@ -293,6 +294,17 @@ function ScoringConsole({ onLogout, toast }) {
     onLogout?.()
   }
 
+  const myScores = session?.myScores ?? {}
+  const projects = session?.projects ?? []
+  const orderedProjects = useMemo(() => {
+    if (listOrder !== 'myScore') return projects
+    return [...projects].sort((a, b) => {
+      const va = (myScores[a.id] && myScores[a.id].weightedTotal) || -1
+      const vb = (myScores[b.id] && myScores[b.id].weightedTotal) || -1
+      return vb - va
+    })
+  }, [projects, myScores, listOrder])
+
   if (loading && !session) return <ConsoleSkeleton />
 
   if (error && !session) {
@@ -310,8 +322,6 @@ function ScoringConsole({ onLogout, toast }) {
   }
 
   const name = judge?.name ?? profile?.name ?? t('评委')
-  const myScores = session?.myScores ?? {}
-  const projects = session?.projects ?? []
   const submittedCount = Object.keys(myScores).length
   const projectCount = projects.length
   const open = competition?.open
@@ -418,10 +428,14 @@ function ScoringConsole({ onLogout, toast }) {
 
           <div className="panel flex min-h-0 flex-1 flex-col">
             <div className="panel-head shrink-0 py-2.5">
-              <span className="panel-title">{t('我的评分进度')}</span>
-              <span className="meta">
-                {submittedCount} / {projectCount}
-              </span>
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <span className="panel-title">{t('我的评分进度')}</span>
+                <div className="flex gap-1.5">
+                  <button type="button" onClick={() => setListOrder('dispatch')} className={listOrder === 'dispatch' ? 'rounded-full px-2 py-0.5 font-mono text-[10.5px] transition bg-brand-600 text-white' : 'rounded-full px-2 py-0.5 font-mono text-[10.5px] transition bg-ink/5 text-ink-muted hover:bg-ink/10'}>{t('出场顺序')}</button>
+                  <button type="button" onClick={() => setListOrder('myScore')} className={listOrder === 'myScore' ? 'rounded-full px-2 py-0.5 font-mono text-[10.5px] transition bg-brand-600 text-white' : 'rounded-full px-2 py-0.5 font-mono text-[10.5px] transition bg-ink/5 text-ink-muted hover:bg-ink/10'}>{t('我的排名')}</button>
+                </div>
+              </div>
+              <span className="meta shrink-0">{submittedCount} / {projectCount}</span>
             </div>
 
             <div className="shrink-0 border-b border-line px-3 py-2">
@@ -450,7 +464,7 @@ function ScoringConsole({ onLogout, toast }) {
 
             <div className="flex min-h-0 flex-1 flex-col justify-evenly overflow-hidden px-2 py-1">
               {projectCount === 0 && <p className="hint px-2 text-center">{t('还没有参赛项目。')}</p>}
-              {projects.map((project) => {
+              {orderedProjects.map((project) => {
                 const score = myScores[project.id]
                 const isCurrent = sameId(project.id, currentProjectId)
                 const selected = sameId(project.id, activeHistoryId)
@@ -462,14 +476,14 @@ function ScoringConsole({ onLogout, toast }) {
                     onClick={() => setHistoryId(project.id)}
                     className={`flex min-h-0 items-center justify-between gap-2 rounded px-2 py-1 text-left disabled:cursor-default ${
                       selected ? 'bg-info-soft' : 'hover:bg-ink/[0.03]'
-                    }`}
+                    } ${!score && listOrder === 'myScore' ? 'opacity-45' : ''}`}
                   >
-                    <span className={`min-w-0 truncate text-[13px] ${isCurrent ? 'font-semibold' : ''}`}>
+                    <span className={`min-w-0 truncate text-[13px] ${isCurrent ? 'font-semibold' : ''} ${!score && listOrder === 'myScore' ? 'text-ink-muted' : ''}`}>
                       {isCurrent ? t('当前 · ') : ''}
                       {project.name}
                     </span>
                     <Pill tone={score ? 'ok' : 'idle'}>
-                      {score ? `${formatScore1(score.weightedTotal)}` : t('待评')}
+                      {score ? `${formatScore1(score.weightedTotal)}` : listOrder === 'myScore' ? '—' : t('待评')}
                     </Pill>
                   </button>
                 )
@@ -521,7 +535,7 @@ function DimensionControl({ dimension, value, max, disabled, onChange }) {
           type="range"
           min={0}
           max={max}
-          step={1}
+          step={0.1}
           value={safeValue}
           disabled={disabled}
           onChange={(e) => onChange(e.target.value)}

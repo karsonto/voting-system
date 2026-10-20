@@ -50,7 +50,7 @@ public class CsvExportService {
         List<Project> projects = stateAssembler.loadProjects(id);
         List<Judge> judges = stateAssembler.loadJudges(id);
         List<ScoreEntry> entries = stateAssembler.loadScores(id);
-        Map<Long, Map<Long, Integer>> items = scoreRepository.findAllItems(id);
+        Map<Long, Map<Long, Double>> items = scoreRepository.findAllItems(id);
         Map<Long, Project> projectIndex = stateAssembler.indexProjects(projects);
         Map<Long, Judge> judgeIndex = stateAssembler.indexJudges(judges);
 
@@ -68,7 +68,7 @@ public class CsvExportService {
         for (ScoreEntry entry : entries) {
             Judge judge = judgeIndex.get(entry.getJudgeId());
             Project project = projectIndex.get(entry.getProjectId());
-            Map<Long, Integer> values = items.get(entry.getId());
+            Map<Long, Double> values = items.get(entry.getId());
 
             List<String> row = new ArrayList<String>();
             row.add(judge == null ? "" : judge.getName());
@@ -78,8 +78,8 @@ public class CsvExportService {
             row.add(project == null ? "" : project.getTrack());
             row.add(project == null ? "" : (project.getMentor() == null ? "" : project.getMentor()));
             for (Dimension d : dimensions) {
-                Integer value = values == null ? null : values.get(d.getId());
-                row.add(value == null ? "" : String.valueOf(value));
+                Double value = values == null ? null : values.get(d.getId());
+                row.add(value == null ? "" : format(value));
             }
             row.add(format(entry.getWeightedTotal()));
             row.add(dateTimeFormat.format(new Date(entry.getCreatedAt())));
