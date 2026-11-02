@@ -33,7 +33,7 @@ import java.util.Map;
 @Service
 public class AdminService {
 
-    private static final int MAX_ROSTER_SIZE = 24;
+    private static final int MAX_ROSTER_SIZE = 40;
 
     private final CompetitionService competitionService;
     private final DimensionRepository dimensionRepository;

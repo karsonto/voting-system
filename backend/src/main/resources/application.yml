@@ -36,9 +36,9 @@ finvote:
   # 令牌签名密钥，正式部署请务必修改（可用环境变量 FINVOTE_SECRET 覆盖）
   secret: ${FINVOTE_SECRET:finvote-dev-secret-change-me-in-production}
   # 后台管理员令牌有效期（分钟）
-  admin-token-minutes: 720
+  admin-token-minutes: 1440
   # 评委令牌有效期（分钟）
-  judge-token-minutes: 720
+  judge-token-minutes: 1440
   # 首次启动时自动创建的管理员账号（仅在库中没有管理员时生效）
   bootstrap-admin-username: ${FINVOTE_ADMIN_USERNAME:admin}
   bootstrap-admin-password: ${FINVOTE_ADMIN_PASSWORD:admin123}

@@ -255,7 +255,7 @@
     "projectsUnit": "個項目",
     "judgesUnit": "位評委",
     "apply": "應用規模",
-    "scaleHint": "增加數量會追加佔位條目，減少數量會刪除末尾條目（含其評分）。單次最多 24 個 / 位。",
+    "scaleHint": "增加數量會追加佔位條目，減少數量會刪除末尾條目（含其評分）。單次最多 40 個 / 位。",
     "scaleToast": "規模已調整為 {{projects}} 個項目 / {{judges}} 位評委",
     "projectsAria": "參賽項目數",
     "judgesAria": "評委人數"

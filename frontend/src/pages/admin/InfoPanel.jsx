@@ -66,7 +66,7 @@ export function InfoPanel({ competition, stats, onSave, onApplyScale, busy, toas
               className="input input-num w-[84px] text-center"
               type="number"
               min="0"
-              max="24"
+              max="40"
               value={projectCount}
               onChange={(e) => setProjectCount(e.target.value)}
               aria-label={t('参赛项目数')}
@@ -76,7 +76,7 @@ export function InfoPanel({ competition, stats, onSave, onApplyScale, busy, toas
               className="input input-num w-[84px] text-center"
               type="number"
               min="0"
-              max="24"
+              max="40"
               value={judgeCount}
               onChange={(e) => setJudgeCount(e.target.value)}
               aria-label={t('评委人数')}

@@ -255,7 +255,7 @@
     "projectsUnit": "projects",
     "judgesUnit": "judges",
     "apply": "Apply scale",
-    "scaleHint": "Increasing appends placeholder entries; decreasing removes trailing entries (and their scores). Max 24 per operation.",
+    "scaleHint": "Increasing appends placeholder entries; decreasing removes trailing entries (and their scores). Max 40 per operation.",
     "scaleToast": "Scale adjusted to {{projects}} projects / {{judges}} judges",
     "projectsAria": "Project count",
     "judgesAria": "Judge count"
