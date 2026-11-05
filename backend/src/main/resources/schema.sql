@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS competition (
     rule_id             TEXT    NOT NULL DEFAULT 'trimmed-mean',
     is_open             INTEGER NOT NULL DEFAULT 1,
     revealed            INTEGER NOT NULL DEFAULT 0,
+    -- 自由打分模式：1 时不按调度指定项目，评委自行选择任意项目评分
+    free_scoring        INTEGER NOT NULL DEFAULT 0,
     locale              TEXT    NOT NULL DEFAULT 'zh-Hans',
     countdown_minutes   INTEGER NOT NULL DEFAULT 0,
     countdown_running   INTEGER NOT NULL DEFAULT 0,

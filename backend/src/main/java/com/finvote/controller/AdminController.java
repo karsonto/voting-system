@@ -11,6 +11,7 @@ import com.finvote.dto.request.CompetitionUpdateRequest;
 import com.finvote.dto.request.CountdownRequest;
 import com.finvote.dto.request.DimensionRequest;
 import com.finvote.dto.request.DispatchRequest;
+import com.finvote.dto.request.FreeScoringRequest;
 import com.finvote.dto.request.JudgeRequest;
 import com.finvote.dto.request.ProjectRequest;
 import com.finvote.dto.request.ScaleRequest;
@@ -206,6 +207,22 @@ public class AdminController {
         Map<String, Object> body = ok();
         body.put("projectId", projectId);
         return body;
+    }
+
+    /**
+     * 自由打分模式开关。
+     *
+     * <p>开启时会取消全部评委的调度并自动打开评分通道；
+     * 关闭后评委回到未分配状态，等待重新调度。</p>
+     */
+    @PutMapping("/free-scoring")
+    public Map<String, Object> updateFreeScoring(@RequestBody FreeScoringRequest request) {
+        if (Boolean.TRUE.equals(request.getEnabled())) {
+            adminService.enableFreeScoring();
+        } else {
+            adminService.disableFreeScoring();
+        }
+        return ok();
     }
 
     /** 清空某位评委对某个项目的评分。 */

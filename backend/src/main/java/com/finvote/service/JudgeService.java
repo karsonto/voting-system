@@ -109,7 +109,8 @@ public class JudgeService {
         response.setJudge(stateAssembler.judgeView(judge));
         response.setStats(stateAssembler.stats(projects, judges, entries, competition.rule()));
 
-        Project current = judge.getCurrentProjectId() == null
+        // 自由打分模式下评委不受调度约束，会话里不再下发「当前项目」
+        Project current = competition.isFreeScoring() || judge.getCurrentProjectId() == null
                 ? null : projectIndex.get(judge.getCurrentProjectId());
         if (current != null) {
             ProjectView view = new ProjectView();

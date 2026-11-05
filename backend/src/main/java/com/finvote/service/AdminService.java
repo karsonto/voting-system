@@ -224,7 +224,9 @@ public class AdminService {
         project.setSortOrder(projectRepository.maxSortOrder(competition.getId()) + 1);
         Long id = projectRepository.insert(project);
 
-        assignUnassignedJudges(competition.getId(), id);
+        if (!competition.isFreeScoring()) {
+            assignUnassignedJudges(competition.getId(), id);
+        }
         competitionService.touch();
         return id;
     }
@@ -259,7 +261,7 @@ public class AdminService {
         judge.setPin(request.getPin().trim());
         judge.setActive(request.getActive() == null || request.getActive());
         judge.setSortOrder(judgeRepository.maxSortOrder(competition.getId()) + 1);
-        judge.setCurrentProjectId(firstProjectId(competition.getId()));
+        judge.setCurrentProjectId(competition.isFreeScoring() ? null : firstProjectId(competition.getId()));
         Long id = judgeRepository.insert(judge);
         competitionService.touch();
         return id;
@@ -304,6 +306,8 @@ public class AdminService {
         if (projectId != null) {
             requireProject(projectId);
         }
+        // 调度即代表回到「按项目统一评审」的模式
+        competitionService.updateFreeScoring(competition.getId(), false);
 
         List<Long> targets = new ArrayList<Long>();
         for (Judge judge : judgeRepository.findByCompetition(competition.getId())) {
@@ -351,8 +355,33 @@ public class AdminService {
         if (!all.isEmpty()) {
             judgeRepository.dispatchAll(all, next.getId());
         }
+        competitionService.updateFreeScoring(competition.getId(), false);
         competitionService.touch();
         return next.getId();
+    }
+
+    /**
+     * 进入自由打分模式：取消全部评委的调度，并自动打开评分通道。
+     *
+     * <p>清空的只是「正在评审哪个项目」，已提交的评分不受影响。</p>
+     */
+    @Transactional
+    public void enableFreeScoring() {
+        Competition competition = competitionService.current();
+        for (Judge judge : judgeRepository.findByCompetition(competition.getId())) {
+            judgeRepository.updateCurrentProject(judge.getId(), null, true);
+        }
+        competitionService.updateFreeScoring(competition.getId(), true);
+        competitionService.updateSwitches(competition.getId(), true, null);
+        competitionService.touch();
+    }
+
+    /** 退出自由打分模式；评委保持未分配，等待后台重新调度。 */
+    @Transactional
+    public void disableFreeScoring() {
+        Competition competition = competitionService.current();
+        competitionService.updateFreeScoring(competition.getId(), false);
+        competitionService.touch();
     }
 
     // ---------------------------------------------------------------- 批量操作
@@ -385,7 +414,7 @@ public class AdminService {
         if (judgeCount != null) {
             int target = clamp(judgeCount);
             List<Judge> judges = judgeRepository.findByCompetition(competition.getId());
-            Long defaultProject = firstProjectId(competition.getId());
+            Long defaultProject = competition.isFreeScoring() ? null : firstProjectId(competition.getId());
             while (judges.size() < target) {
                 Judge judge = new Judge();
                 judge.setCompetitionId(competition.getId());
@@ -403,7 +432,9 @@ public class AdminService {
                 avatarStorage.delete(removed.getAvatar());
                 judgeRepository.delete(removed.getId());
             }
-            assignUnassignedJudges(competition.getId(), defaultProject);
+            if (!competition.isFreeScoring()) {
+                assignUnassignedJudges(competition.getId(), defaultProject);
+            }
         }
 
         competitionService.touch();
@@ -439,6 +470,7 @@ public class AdminService {
                 ScoreScale.WEIGHTED_100.getId(), ScoreRule.TRIMMED_MEAN.getId(),
                 LocaleCopy.orDefault(competition.getLocale()));
         competitionService.updateSwitches(id, false, false);
+        competitionService.updateFreeScoring(id, false);
         competitionService.touch();
     }
 

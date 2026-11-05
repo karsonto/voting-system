@@ -17,7 +17,7 @@ import java.util.List;
 public class CompetitionRepository {
 
     private static final String COLUMNS =
-            "id, name, stage, scale_id, rule_id, is_open, revealed, locale, "
+            "id, name, stage, scale_id, rule_id, is_open, revealed, free_scoring, locale, "
                     + "countdown_minutes, countdown_running, countdown_end_at, "
                     + "version, updated_at, created_at";
 
@@ -30,6 +30,7 @@ public class CompetitionRepository {
         c.setRuleId(rs.getString("rule_id"));
         c.setOpen(rs.getInt("is_open") == 1);
         c.setRevealed(rs.getInt("revealed") == 1);
+        c.setFreeScoring(rs.getInt("free_scoring") == 1);
         c.setLocale(rs.getString("locale"));
         c.setCountdownMinutes(rs.getInt("countdown_minutes"));
         c.setCountdownRunning(rs.getInt("countdown_running") == 1);
@@ -68,9 +69,10 @@ public class CompetitionRepository {
 
     public Long insert(Competition c) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        namedJdbc.update("INSERT INTO competition (name, stage, scale_id, rule_id, is_open, revealed, locale, "
-                        + "countdown_minutes, countdown_running, countdown_end_at, version, updated_at, created_at) "
-                        + "VALUES (:name, :stage, :scaleId, :ruleId, :open, :revealed, :locale, "
+        namedJdbc.update("INSERT INTO competition (name, stage, scale_id, rule_id, is_open, revealed, free_scoring, "
+                        + "locale, countdown_minutes, countdown_running, countdown_end_at, version, updated_at, "
+                        + "created_at) "
+                        + "VALUES (:name, :stage, :scaleId, :ruleId, :open, :revealed, :freeScoring, :locale, "
                         + ":countdownMinutes, :countdownRunning, :countdownEndAt, :version, :updatedAt, :createdAt)",
                 new MapSqlParameterSource()
                         .addValue("name", c.getName())
@@ -79,6 +81,7 @@ public class CompetitionRepository {
                         .addValue("ruleId", c.getRuleId())
                         .addValue("open", c.isOpen() ? 1 : 0)
                         .addValue("revealed", c.isRevealed() ? 1 : 0)
+                        .addValue("freeScoring", c.isFreeScoring() ? 1 : 0)
                         .addValue("locale", c.getLocale() == null ? "zh-Hans" : c.getLocale())
                         .addValue("countdownMinutes", c.getCountdownMinutes())
                         .addValue("countdownRunning", c.isCountdownRunning() ? 1 : 0)
@@ -119,6 +122,12 @@ public class CompetitionRepository {
         }
         sql.append(" WHERE id = :id");
         namedJdbc.update(sql.toString(), params);
+    }
+
+    /** 更新自由打分模式开关。开启/关闭都不影响已提交的评分。 */
+    public void updateFreeScoring(Long id, boolean enabled) {
+        jdbcTemplate.update("UPDATE competition SET free_scoring = ?, updated_at = ? WHERE id = ?",
+                enabled ? 1 : 0, System.currentTimeMillis(), id);
     }
 
     /** 更新倒计时配置：时长（分钟）、是否运行、截止时间（毫秒 epoch）。 */

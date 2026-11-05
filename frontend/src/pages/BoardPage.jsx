@@ -39,13 +39,14 @@ export function BoardPage() {
   if (error && !state) return <BoardError error={error} />
 
   const competition = state?.competition
+  // 自由打分模式下评委各评各的，凑不满全员提交；只要有一份评分就上榜
+  const freeScoring = !!competition?.freeScoring
   const currentProject = (state?.projects ?? []).find((p) => p.id === state?.currentProjectId) ?? null
   const currentRow = (state?.board ?? []).find((row) => row.projectId === state?.currentProjectId) ?? null
-  const ranked = (state?.board ?? []).filter(
-    (row) =>
-      row.judgeCount > 0 &&
-      row.submittedCount >= row.judgeCount &&
-      row.mean != null,
+  const ranked = (state?.board ?? []).filter((row) =>
+    freeScoring
+      ? row.submittedCount > 0 && row.mean != null
+      : row.judgeCount > 0 && row.submittedCount >= row.judgeCount && row.mean != null,
   )
 
   return (
@@ -162,7 +163,9 @@ export function BoardPage() {
                 </div>
               </>
             ) : (
-              <div className="text-[22px] text-white/70">{t('等待组委会指定当前项目')}</div>
+              <div className="text-[22px] text-white/70">
+                {freeScoring ? t('自由打分中，等待评委提交分数') : t('等待组委会指定当前项目')}
+              </div>
             )}
           </div>
 
@@ -171,7 +174,10 @@ export function BoardPage() {
               <div className="text-[26px] font-medium tracking-[0.18em]">{t('得分')}</div>
               <RevealNumber
                 value={
-                  currentRow && currentRow.judgeCount > 0 && currentRow.submittedCount >= currentRow.judgeCount
+                  currentRow &&
+                  (freeScoring
+                    ? currentRow.submittedCount > 0
+                    : currentRow.judgeCount > 0 && currentRow.submittedCount >= currentRow.judgeCount)
                     ? currentRow.mean
                     : null
                 }

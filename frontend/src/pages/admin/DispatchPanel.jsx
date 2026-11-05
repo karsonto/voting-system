@@ -34,9 +34,11 @@ export function DispatchPanel({
   onNext,
   onClearScore,
   onCountdown,
+  onToggleFreeScoring,
   busy,
 }) {
   const { t } = useI18n()
+  const freeScoring = !!competition?.freeScoring
   const [targetProjectId, setTargetProjectId] = useState(
     currentProjectId ?? projects[0]?.id ?? '',
   )
@@ -54,6 +56,61 @@ export function DispatchPanel({
 
   return (
     <div className="flex flex-col gap-5">
+      <div className="panel">
+        <div className="panel-head">
+          <span className="panel-title">{t('自由打分')}</span>
+          {freeScoring ? (
+            <Pill tone="info" live>
+              {t('自由打分进行中')}
+            </Pill>
+          ) : (
+            <Pill tone="idle">{t('未开启')}</Pill>
+          )}
+        </div>
+        <div className="panel-body flex flex-col gap-3">
+          {freeScoring ? (
+            <>
+              <p className="text-[13.5px]">
+                <strong>{t('评委可自行选择项目打分')}</strong>
+                {t(' — 已提交的分数可以再次提交覆盖修改。')}
+              </p>
+              <p className="hint">
+                {t('本模式下调度功能暂停使用。退出后评委回到未分配状态，需要重新调度。')}
+              </p>
+              <div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  disabled={busy}
+                  onClick={() => onToggleFreeScoring(false)}
+                >
+                  {t('退出自由打分，恢复调度')}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-[13.5px]">
+                {t('取消全部评委的调度并自动打开评分通道，评委可自行选择任意项目打分。')}
+              </p>
+              <p className="hint">
+                {t('已提交的评分不受影响；重新调度任意评委会自动退出自由打分。')}
+              </p>
+              <div>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={busy}
+                  onClick={() => onToggleFreeScoring(true)}
+                >
+                  {t('取消全部调度并开放自由打分')}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
       <div className="panel">
         <div className="panel-head">
           <span className="panel-title">{t('评分通道')}</span>
@@ -158,6 +215,7 @@ export function DispatchPanel({
             <select
               className="select w-[300px] max-w-full"
               value={targetProjectId}
+              disabled={busy || freeScoring}
               onChange={(e) => setTargetProjectId(e.target.value ? Number(e.target.value) : '')}
             >
               <option value="">{t('— 选择项目 —')}</option>
@@ -171,13 +229,18 @@ export function DispatchPanel({
             <button
               type="button"
               className="btn btn-primary"
-              disabled={busy || targetProjectId === ''}
+              disabled={busy || freeScoring || targetProjectId === ''}
               onClick={() => onDispatchAll(null, Number(targetProjectId))}
             >
               {t('全员切换到该项目')}
             </button>
 
-            <button type="button" className="btn btn-secondary" onClick={onNext} disabled={busy}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={onNext}
+              disabled={busy || freeScoring}
+            >
               {t('切到下一项')}
             </button>
 
@@ -185,20 +248,22 @@ export function DispatchPanel({
               type="button"
               className="btn btn-secondary ml-auto"
               onClick={() => onDispatchAll(null, null)}
-              disabled={busy}
+              disabled={busy || freeScoring}
             >
               {t('取消全部调度')}
             </button>
           </div>
 
           <p className="hint mt-3">
-            {judgesAligned && currentProject
-              ? t('当前全员统一评审：{name}', { name: currentProject.name })
-              : currentProject
-                ? t('评委分散在多个项目上（多数正在评「{name}」），可点击「全员切换到该项目」统一。', {
-                    name: currentProject.name,
-                  })
-                : t('当前尚未分配评审项目。')}
+            {freeScoring
+              ? t('当前处于自由打分模式：评委自行选择项目，调度功能已暂停。')
+              : judgesAligned && currentProject
+                ? t('当前全员统一评审：{name}', { name: currentProject.name })
+                : currentProject
+                  ? t('评委分散在多个项目上（多数正在评「{name}」），可点击「全员切换到该项目」统一。', {
+                      name: currentProject.name,
+                    })
+                  : t('当前尚未分配评审项目。')}
           </p>
         </div>
       </div>
@@ -207,10 +272,12 @@ export function DispatchPanel({
         <div className="panel-head">
           <span className="panel-title">{t('评委调度台')}</span>
           <span className="meta">
-            {t('{assigned} / {total} 位评委已分配项目', {
-              assigned: judges.filter((j) => j.currentProjectId).length,
-              total: judges.length,
-            })}
+            {freeScoring
+              ? t('自由打分模式：评委不再按项目分配')
+              : t('{assigned} / {total} 位评委已分配项目', {
+                  assigned: judges.filter((j) => j.currentProjectId).length,
+                  total: judges.length,
+                })}
           </span>
         </div>
 
@@ -233,33 +300,46 @@ export function DispatchPanel({
                   <td className="whitespace-nowrap font-semibold">{judge.name}</td>
                   <td className="text-ink-muted">{judge.org || '—'}</td>
                   <td>
-                    <select
-                      className="select py-1.5"
-                      value={judge.currentProjectId ?? ''}
-                      disabled={busy}
-                      onChange={(e) =>
-                        onDispatchOne(judge.id, e.target.value === '' ? null : Number(e.target.value))
-                      }
-                    >
-                      <option value="">{t('— 取消分配 —')}</option>
-                      {projects.map((project) => (
-                        <option key={project.id} value={project.id}>
-                          {project.name}
-                        </option>
-                      ))}
-                    </select>
+                    {freeScoring ? (
+                      <Pill tone="info">{t('自由选择')}</Pill>
+                    ) : (
+                      <select
+                        className="select py-1.5"
+                        value={judge.currentProjectId ?? ''}
+                        disabled={busy}
+                        onChange={(e) =>
+                          onDispatchOne(judge.id, e.target.value === '' ? null : Number(e.target.value))
+                        }
+                      >
+                        <option value="">{t('— 取消分配 —')}</option>
+                        {projects.map((project) => (
+                          <option key={project.id} value={project.id}>
+                            {project.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </td>
                   <td>
-                    <Pill tone={judge.submittedOnCurrent ? 'ok' : 'warn'}>
-                      {judge.submittedOnCurrent ? t('已提交') : t('待评分')}
-                    </Pill>
+                    {freeScoring ? (
+                      <Pill tone={judge.submittedCount > 0 ? 'ok' : 'warn'}>
+                        {t('已评 {done} / {total} 项', {
+                          done: judge.submittedCount ?? 0,
+                          total: projects.length,
+                        })}
+                      </Pill>
+                    ) : (
+                      <Pill tone={judge.submittedOnCurrent ? 'ok' : 'warn'}>
+                        {judge.submittedOnCurrent ? t('已提交') : t('待评分')}
+                      </Pill>
+                    )}
                   </td>
                   <td>
                     <div className="flex justify-end">
                       <button
                         type="button"
                         className="btn btn-ghost btn-sm text-ink-faint hover:text-danger-ink"
-                        disabled={busy || !judge.currentProjectId || !judge.submittedOnCurrent}
+                        disabled={busy || freeScoring || !judge.currentProjectId || !judge.submittedOnCurrent}
                         title={
                           judge.submittedOnCurrent ? t('清空该评委对当前项目的评分') : t('该评委尚未提交此项评分')
                         }

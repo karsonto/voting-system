@@ -70,7 +70,9 @@ public class JudgeController {
         Map<String, Object> body = new LinkedHashMap<String, Object>();
         body.put("version", session.getVersion());
         body.put("open", session.getCompetition().isOpen());
-        body.put("currentProjectId", judge.getCurrentProjectId());
+        body.put("freeScoring", session.getCompetition().isFreeScoring());
+        body.put("currentProjectId",
+                session.getCompetition().isFreeScoring() ? null : judge.getCurrentProjectId());
         body.put("currentProjectName",
                 session.getCurrentProject() == null ? null : session.getCurrentProject().getName());
         body.put("submittedCount", session.getMySubmittedCount());

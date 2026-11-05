@@ -449,6 +449,32 @@ export const zhHant = {
   '参数校验失败': '參數校驗失敗',
   '请求体格式不正确': '請求體格式不正確',
   '界面语言只支持简体中文、繁体中文和英文': '界面語言只支持簡體中文、繁體中文和英文',
+
+  '自由打分': '自由打分',
+  '自由打分进行中': '自由打分進行中',
+  '未开启': '未開啟',
+  '评委可自行选择项目打分': '評委可自行選擇項目打分',
+  ' — 已提交的分数可以再次提交覆盖修改。': ' — 已提交的分數可以再次提交覆蓋修改。',
+  '本模式下调度功能暂停使用。退出后评委回到未分配状态，需要重新调度。':
+    '本模式下調度功能暫停使用。退出後評委回到未分配狀態，需要重新調度。',
+  '退出自由打分，恢复调度': '退出自由打分，恢復調度',
+  '取消全部评委的调度并自动打开评分通道，评委可自行选择任意项目打分。':
+    '取消全部評委的調度並自動打開評分通道，評委可自行選擇任意項目打分。',
+  '已提交的评分不受影响；重新调度任意评委会自动退出自由打分。':
+    '已提交的評分不受影響；重新調度任意評委會自動退出自由打分。',
+  '取消全部调度并开放自由打分': '取消全部調度並開放自由打分',
+  '当前处于自由打分模式：评委自行选择项目，调度功能已暂停。':
+    '當前處於自由打分模式：評委自行選擇項目，調度功能已暫停。',
+  '自由打分模式：评委不再按项目分配': '自由打分模式：評委不再按項目分配',
+  '自由选择': '自由選擇',
+  '已评 {done} / {total} 项': '已評 {done} / {total} 項',
+  '确定取消全部调度并开放自由打分吗？\n所有评委将变为未分配，评分通道会自动打开，评委可自行选择任意项目打分并修改分数。':
+    '確定取消全部調度並開放自由打分嗎？\n所有評委將變為未分配，評分通道會自動打開，評委可自行選擇任意項目打分並修改分數。',
+  '自由打分已开启：评委可自选项目打分': '自由打分已開啟：評委可自選項目打分',
+  '已退出自由打分，请重新调度评委': '已退出自由打分，請重新調度評委',
+  '自由打分 · 选择项目': '自由打分 · 選擇項目',
+  '可任选项目评分，已提交的分数再次提交即可修改。': '可任選項目評分，已提交的分數再次提交即可修改。',
+  '自由打分中，等待评委提交分数': '自由打分中，等待評委提交分數',
 }
 
 export const en = {
@@ -899,4 +925,30 @@ export const en = {
   '参数校验失败': 'Invalid input',
   '请求体格式不正确': 'The request could not be read',
   '界面语言只支持简体中文、繁体中文和英文': 'Language must be Simplified Chinese, Traditional Chinese, or English',
+
+  '自由打分': 'Free scoring',
+  '自由打分进行中': 'Free scoring on',
+  '未开启': 'Off',
+  '评委可自行选择项目打分': 'Judges choose which project to score',
+  ' — 已提交的分数可以再次提交覆盖修改。': ' — resubmit to overwrite an existing score.',
+  '本模式下调度功能暂停使用。退出后评委回到未分配状态，需要重新调度。':
+    'Dispatch is paused in this mode. After leaving it, judges are unassigned and must be dispatched again.',
+  '退出自由打分，恢复调度': 'Leave free scoring',
+  '取消全部评委的调度并自动打开评分通道，评委可自行选择任意项目打分。':
+    'Clears every judge assignment and opens scoring so judges can score any project they choose.',
+  '已提交的评分不受影响；重新调度任意评委会自动退出自由打分。':
+    'Submitted scores are kept. Dispatching any judge leaves free scoring automatically.',
+  '取消全部调度并开放自由打分': 'Clear assignments and open free scoring',
+  '当前处于自由打分模式：评委自行选择项目，调度功能已暂停。':
+    'Free scoring is on: judges pick their own projects, so dispatch is paused.',
+  '自由打分模式：评委不再按项目分配': 'Free scoring: judges are not assigned to projects',
+  '自由选择': 'Free choice',
+  '已评 {done} / {total} 项': '{done} / {total} scored',
+  '确定取消全部调度并开放自由打分吗？\n所有评委将变为未分配，评分通道会自动打开，评委可自行选择任意项目打分并修改分数。':
+    'Clear all assignments and open free scoring?\nEvery judge becomes unassigned, scoring opens automatically, and judges can score or edit any project.',
+  '自由打分已开启：评委可自选项目打分': 'Free scoring is on: judges can pick any project',
+  '已退出自由打分，请重新调度评委': 'Free scoring is off. Dispatch judges again.',
+  '自由打分 · 选择项目': 'Free scoring · pick a project',
+  '可任选项目评分，已提交的分数再次提交即可修改。': 'Score any project. Resubmit to change an existing score.',
+  '自由打分中，等待评委提交分数': 'Free scoring in progress, waiting for scores',
 }

@@ -17,6 +17,8 @@ public class Competition {
     private String ruleId;
     private boolean open;
     private boolean revealed;
+    /** 自由打分模式：开启后评委不再受调度限制，可自行选择任意项目评分。 */
+    private boolean freeScoring;
     /** 界面语言：zh-Hans / zh-Hant / en。全系统共用这一项。 */
     private String locale;
     /** 倒计时时长（分钟），0 表示未配置。 */

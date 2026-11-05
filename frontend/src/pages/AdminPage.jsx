@@ -151,6 +151,19 @@ export function AdminPage() {
   const handleDispatchOne = (judgeId, projectId) =>
     run(() => adminApi.dispatch([judgeId], projectId), t('已更新该评委的评审项目'))
 
+  const handleToggleFreeScoring = async (enabled) => {
+    if (enabled) {
+      const confirmed = window.confirm(
+        t('确定取消全部调度并开放自由打分吗？\n所有评委将变为未分配，评分通道会自动打开，评委可自行选择任意项目打分并修改分数。'),
+      )
+      if (!confirmed) return
+    }
+    await run(
+      () => adminApi.setFreeScoring(enabled),
+      enabled ? t('自由打分已开启：评委可自选项目打分') : t('已退出自由打分，请重新调度评委'),
+    )
+  }
+
   const handleDispatchNext = async () => {
     setBusy(true)
     try {
@@ -387,6 +400,7 @@ export function AdminPage() {
               <JudgeTable
                 judges={judges}
                 projects={projects}
+                freeScoring={!!competition?.freeScoring}
                 onAdd={handleAddJudge}
                 onUpdate={handleUpdateJudge}
                 onDelete={handleDeleteJudge}
@@ -410,6 +424,7 @@ export function AdminPage() {
               onNext={handleDispatchNext}
               onClearScore={handleClearScore}
               onCountdown={handleCountdown}
+              onToggleFreeScoring={handleToggleFreeScoring}
               busy={busy}
             />
           )}

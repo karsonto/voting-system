@@ -79,6 +79,11 @@ public class CompetitionService {
         competitionRepository.updateCountdown(id, minutes, running, endAt);
     }
 
+    /** 更新自由打分模式开关。 */
+    public void updateFreeScoring(Long id, boolean enabled) {
+        competitionRepository.updateFreeScoring(id, enabled);
+    }
+
     /** 递增版本号，标记数据已变更。 */
     public long touch() {
         Competition competition = current();

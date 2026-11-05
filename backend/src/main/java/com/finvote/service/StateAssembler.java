@@ -67,6 +67,7 @@ public class StateAssembler {
         view.setStage(competition.getStage());
         view.setOpen(competition.isOpen());
         view.setRevealed(competition.isRevealed());
+        view.setFreeScoring(competition.isFreeScoring());
         view.setLocale(competition.getLocale() == null || competition.getLocale().trim().isEmpty()
                 ? "zh-Hans" : competition.getLocale());
         view.setCountdownMinutes(competition.getCountdownMinutes());
@@ -452,9 +453,18 @@ public class StateAssembler {
         response.setBoard(board(projects, judges, entries, competition.rule(), false));
         response.setStats(stats(projects, judges, entries, competition.rule()));
 
-        Long currentProjectId = resolveCurrentProject(judges);
+        Long currentProjectId;
+        boolean aligned;
+        if (competition.isFreeScoring()) {
+            // 自由打分模式下没有「被调度到的项目」，焦点取已提交评分最多的项目
+            currentProjectId = resolveFreeFocusProject(projects, entries);
+            aligned = false;
+        } else {
+            currentProjectId = resolveCurrentProject(judges);
+            aligned = currentProjectId != null && allAligned(judges, currentProjectId);
+        }
         response.setCurrentProjectId(currentProjectId);
-        response.setJudgesAligned(currentProjectId != null && allAligned(judges, currentProjectId));
+        response.setJudgesAligned(aligned);
         response.setCurrentScores(currentJudgeScores(currentProjectId, judges, entries));
         return response;
     }
@@ -540,6 +550,27 @@ public class StateAssembler {
             if (count > bestCount) {
                 bestCount = count;
                 best = pid;
+            }
+        }
+        return best;
+    }
+
+    /**
+     * 自由打分模式下的「焦点项目」：已提交评分份数最多的项目。
+     * 并列时取出场顺序靠前者；没有任何评分时返回 null。
+     */
+    public Long resolveFreeFocusProject(List<Project> projects, List<ScoreEntry> entries) {
+        if (projects == null || projects.isEmpty() || entries == null || entries.isEmpty()) {
+            return null;
+        }
+        Map<Long, Integer> counter = submittedCountByProject(entries);
+        Long best = null;
+        int bestCount = 0;
+        for (Project project : projects) {
+            Integer count = counter.get(project.getId());
+            if (count != null && count > bestCount) {
+                bestCount = count;
+                best = project.getId();
             }
         }
         return best;

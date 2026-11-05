@@ -25,7 +25,8 @@ public class CompetitionView {
 
     private boolean open;
     private boolean revealed;
-    /** 界面语言：zh-Hans / zh-Hant / en。 */
+    /** 自由打分模式：开启后评委可自行选择任意项目评分并反复修改。 */
+    private boolean freeScoring;
     private String locale;
     /** 倒计时时长（分钟），0 表示未配置。 */
     private int countdownMinutes;

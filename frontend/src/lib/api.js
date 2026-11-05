@@ -235,6 +235,9 @@ export const adminApi = {
     request('/api/admin/dispatch', { method: 'POST', role: 'ADMIN', body: { judgeIds, projectId } }),
   dispatchNext: () => request('/api/admin/dispatch/next', { method: 'POST', role: 'ADMIN' }),
 
+  setFreeScoring: (enabled) =>
+    request('/api/admin/free-scoring', { method: 'PUT', role: 'ADMIN', body: { enabled } }),
+
   clearScore: (judgeId, projectId) =>
     request(`/api/admin/scores/${judgeId}/${projectId}`, { method: 'DELETE', role: 'ADMIN' }),
   clearAllScores: () => request('/api/admin/scores', { method: 'DELETE', role: 'ADMIN' }),

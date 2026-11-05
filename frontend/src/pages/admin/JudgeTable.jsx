@@ -6,7 +6,7 @@ import { useI18n } from '../../i18n/index.js'
 /**
  * 评委名单：维护姓名、机构、PIN，以及查看当前评审项目。
  */
-export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onUploadAvatar, onRandomPin, busy }) {
+export function JudgeTable({ judges, projects, freeScoring, onAdd, onUpdate, onDelete, onUploadAvatar, onRandomPin, busy }) {
   const { t } = useI18n()
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState(null)
@@ -79,11 +79,22 @@ export function JudgeTable({ judges, projects, onAdd, onUpdate, onDelete, onUplo
                   </td>
                   <td className="text-ink-muted">{judge.org || '—'}</td>
                   <td className="font-mono tnum">{judge.pin}</td>
-                  <td className="text-ink-muted">{projectName(judge.currentProjectId)}</td>
+                  <td className="text-ink-muted">
+                    {freeScoring ? t('自由选择') : projectName(judge.currentProjectId)}
+                  </td>
                   <td>
-                    <Pill tone={judge.submittedOnCurrent ? 'ok' : 'warn'}>
-                      {judge.submittedOnCurrent ? t('当前项已提交') : t('当前项待评分')}
-                    </Pill>
+                    {freeScoring ? (
+                      <Pill tone={(judge.submittedCount ?? 0) > 0 ? 'ok' : 'warn'}>
+                        {t('已评 {done} / {total} 项', {
+                          done: judge.submittedCount ?? 0,
+                          total: projects.length,
+                        })}
+                      </Pill>
+                    ) : (
+                      <Pill tone={judge.submittedOnCurrent ? 'ok' : 'warn'}>
+                        {judge.submittedOnCurrent ? t('当前项已提交') : t('当前项待评分')}
+                      </Pill>
+                    )}
                   </td>
                   <td>
                     <div className="flex justify-end gap-1">

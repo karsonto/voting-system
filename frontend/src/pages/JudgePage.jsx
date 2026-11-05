@@ -195,19 +195,50 @@ function ScoringConsole({ onLogout, toast }) {
   const currentProject = session?.currentProject
   const maxScore = competition?.maxPerDimension ?? 100
 
+  const freeScoring = !!competition?.freeScoring
+  const projects = useMemo(() => session?.projects ?? [], [session])
+  const myScores = useMemo(() => session?.myScores ?? {}, [session])
+
   const { read, write, clear } = useDraftStorage(judge?.id ?? profile?.judgeId)
 
   const [formValues, setFormValues] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [historyId, setHistoryId] = useState(null)
   const [listOrder, setListOrder] = useState('dispatch')
+  // 自由打分模式下评委自己选定的评分项目
+  const [freeProjectId, setFreeProjectId] = useState(null)
 
   // 记录上一轮的项目 ID，用于判断「是否被调度切换」
   const lastProjectIdRef = useRef(null)
   const seenOnceRef = useRef(false)
 
-  const currentProjectId = currentProject?.id ?? null
-  const existingScore = currentProjectId ? session?.myScores?.[currentProjectId] : null
+  /**
+   * 自由打分模式下确定当前评分项目：
+   * 1. 优先沿用本地记住的选择（仍在项目列表内）；
+   * 2. 否则选第一个还没评过的项目；
+   * 3. 全部评过则回到第一个项目，方便复查修改。
+   */
+  useEffect(() => {
+    if (!freeScoring || projects.length === 0) return
+    if (freeProjectId != null && projects.some((p) => sameId(p.id, freeProjectId))) return
+    const stored = readFreeSelection(judge?.id ?? profile?.judgeId)
+    const remembered = stored != null && projects.some((p) => sameId(p.id, stored)) ? stored : null
+    const firstUnscored = projects.find((p) => !myScores[p.id])
+    const next = remembered ?? firstUnscored?.id ?? projects[0]?.id ?? null
+    setFreeProjectId(next)
+  }, [freeScoring, projects, myScores, freeProjectId, judge?.id, profile?.judgeId])
+
+  useEffect(() => {
+    if (!freeScoring || freeProjectId == null) return
+    writeFreeSelection(judge?.id ?? profile?.judgeId, freeProjectId)
+  }, [freeScoring, freeProjectId, judge?.id, profile?.judgeId])
+
+  const currentProjectId = freeScoring ? freeProjectId : (currentProject?.id ?? null)
+  /** 当前正在评分的项目信息：调度模式下来自后端调度，自由模式下由评委自己选择。 */
+  const activeProject = freeScoring
+    ? projects.find((project) => sameId(project.id, currentProjectId)) ?? null
+    : currentProject
+  const existingScore = currentProjectId ? myScores[currentProjectId] : null
 
   // 项目切换或维度变化时，重新装载表单
   useEffect(() => {
@@ -216,7 +247,7 @@ function ScoringConsole({ onLogout, toast }) {
     const switched = lastProjectIdRef.current !== null && lastProjectIdRef.current !== currentProjectId
     lastProjectIdRef.current = currentProjectId
 
-    const score = session?.myScores?.[currentProjectId]
+    const score = myScores[currentProjectId]
     const draft = read(currentProjectId)
 
     const next = {}
@@ -229,8 +260,8 @@ function ScoringConsole({ onLogout, toast }) {
     })
     setFormValues(next)
 
-    if (switched && currentProject) {
-      toast(t('已切换评审项目：{name}', { name: currentProject.name }))
+    if (switched && !freeScoring && activeProject) {
+      toast(t('已切换评审项目：{name}', { name: activeProject.name }))
     }
     seenOnceRef.current = true
     // 仅在项目 ID 或维度结构变化时重载，避免每次轮询都覆盖用户正在输入的分数
@@ -276,7 +307,7 @@ function ScoringConsole({ onLogout, toast }) {
       const result = await judgeApi.submit(currentProjectId, formValues, '')
       clear(currentProjectId)
       await reload()
-      toast(t('已提交「{name}」评分：{score} 分', { name: currentProject.name, score: formatScore1(result?.weightedTotal) }))
+      toast(t('已提交「{name}」评分：{score} 分', { name: activeProject?.name ?? '', score: formatScore1(result?.weightedTotal) }))
     } catch (err) {
       toast(err.message || t('提交失败'))
     } finally {
@@ -293,8 +324,6 @@ function ScoringConsole({ onLogout, toast }) {
     onLogout?.()
   }
 
-  const myScores = session?.myScores ?? {}
-  const projects = session?.projects ?? []
   const orderedProjects = useMemo(() => {
     if (listOrder !== 'myScore') return projects
     return [...projects].sort((a, b) => {
@@ -325,11 +354,13 @@ function ScoringConsole({ onLogout, toast }) {
   const projectCount = projects.length
   const open = competition?.open
   const scoredProjects = projects.filter((project) => myScores[project.id])
-  const activeHistoryId = scoredProjects.some((project) => sameId(project.id, historyId))
-    ? historyId
-    : scoredProjects.some((project) => sameId(project.id, currentProjectId))
-      ? currentProjectId
-      : (scoredProjects[scoredProjects.length - 1]?.id ?? null)
+  const activeHistoryId = freeScoring
+    ? currentProjectId
+    : scoredProjects.some((project) => sameId(project.id, historyId))
+      ? historyId
+      : scoredProjects.some((project) => sameId(project.id, currentProjectId))
+        ? currentProjectId
+        : (scoredProjects[scoredProjects.length - 1]?.id ?? null)
   const historyProject = projects.find((project) => sameId(project.id, activeHistoryId))
   const historyBreakdown = breakdownOf(activeHistoryId ? myScores[activeHistoryId] : null, dimensions, t)
 
@@ -361,21 +392,61 @@ function ScoringConsole({ onLogout, toast }) {
       <div className="grid min-h-0 flex-1 grid-cols-1 grid-rows-1 gap-3 p-3 md:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.9fr)]">
         <section className="flex min-h-0 flex-col gap-3">
           <div className="panel shrink-0 px-4 py-3">
-            <div className="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">
-              {t('当前评审项目')}
-            </div>
-            <h1 className="mt-1 truncate text-[clamp(20px,2.4vw,28px)] font-semibold leading-tight tracking-[-0.025em]">
-              {currentProject?.name || t('暂未分配评审项目')}
-            </h1>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <Pill tone="idle">{currentProject?.team || '—'}</Pill>
-              <Pill tone="idle">{currentProject?.track || '—'}</Pill>
-              {currentProject && (
-                <Pill tone="info">
-                  {pad2(projects.findIndex((project) => sameId(project.id, currentProject.id)) + 1)} / {pad2(projectCount)}
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-mono text-[11px] uppercase tracking-[0.06em] text-ink-muted">
+                {freeScoring ? t('自由打分 · 选择项目') : t('当前评审项目')}
+              </div>
+              {freeScoring && (
+                <Pill tone="info" live>
+                  {t('自由打分')}
                 </Pill>
               )}
             </div>
+            {freeScoring ? (
+              <>
+                <select
+                  className="select mt-2 w-full"
+                  value={freeProjectId ?? ''}
+                  onChange={(e) => setFreeProjectId(e.target.value === '' ? null : Number(e.target.value))}
+                >
+                  {projects.length === 0 && <option value="">{t('还没有参赛项目。')}</option>}
+                  {projects.map((project) => {
+                    const scored = myScores[project.id]
+                    return (
+                      <option key={project.id} value={project.id}>
+                        {scored ? `[${formatScore1(scored.weightedTotal)}] ` : ''}
+                        {project.name}
+                      </option>
+                    )
+                  })}
+                </select>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <Pill tone="idle">{activeProject?.team || '—'}</Pill>
+                  <Pill tone="idle">{activeProject?.track || '—'}</Pill>
+                  {activeProject && (
+                    <Pill tone="info">
+                      {pad2(projects.findIndex((project) => sameId(project.id, activeProject.id)) + 1)} / {pad2(projectCount)}
+                    </Pill>
+                  )}
+                </div>
+                <p className="hint mt-1.5">{t('可任选项目评分，已提交的分数再次提交即可修改。')}</p>
+              </>
+            ) : (
+              <>
+                <h1 className="mt-1 truncate text-[clamp(20px,2.4vw,28px)] font-semibold leading-tight tracking-[-0.025em]">
+                  {currentProject?.name || t('暂未分配评审项目')}
+                </h1>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <Pill tone="idle">{currentProject?.team || '—'}</Pill>
+                  <Pill tone="idle">{currentProject?.track || '—'}</Pill>
+                  {currentProject && (
+                    <Pill tone="info">
+                      {pad2(projects.findIndex((project) => sameId(project.id, currentProject.id)) + 1)} / {pad2(projectCount)}
+                    </Pill>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="panel flex min-h-0 flex-1 flex-col">
@@ -467,12 +538,16 @@ function ScoringConsole({ onLogout, toast }) {
                 const score = myScores[project.id]
                 const isCurrent = sameId(project.id, currentProjectId)
                 const selected = sameId(project.id, activeHistoryId)
+                const clickable = freeScoring || !!score
                 return (
                   <button
                     key={project.id}
                     type="button"
-                    disabled={!score}
-                    onClick={() => setHistoryId(project.id)}
+                    disabled={!clickable}
+                    onClick={() => {
+                      if (freeScoring) setFreeProjectId(project.id)
+                      setHistoryId(project.id)
+                    }}
                     className={`flex min-h-0 items-center justify-between gap-2 rounded px-2 py-1 text-left disabled:cursor-default ${
                       selected ? 'bg-info-soft' : 'hover:bg-ink/[0.03]'
                     } ${!score && listOrder === 'myScore' ? 'opacity-45' : ''}`}
@@ -515,6 +590,30 @@ function breakdownOf(score, dimensions, t) {
 
 function sameId(left, right) {
   return left != null && right != null && String(left) === String(right)
+}
+
+/** 自由打分模式下记住评委上次选择的项目，刷新页面后还能回到同一项。 */
+const FREE_PROJECT_KEY = 'finvote.judge.freeProject'
+
+function readFreeSelection(judgeId) {
+  if (!judgeId) return null
+  try {
+    const raw = window.localStorage.getItem(`${FREE_PROJECT_KEY}.${judgeId}`)
+    if (raw == null || raw === '') return null
+    const value = Number(raw)
+    return Number.isFinite(value) ? value : null
+  } catch {
+    return null
+  }
+}
+
+function writeFreeSelection(judgeId, projectId) {
+  if (!judgeId || projectId == null) return
+  try {
+    window.localStorage.setItem(`${FREE_PROJECT_KEY}.${judgeId}`, String(projectId))
+  } catch {
+    /* 忽略写入失败 */
+  }
 }
 
 /** 单个维度的滑杆 + 数值输入。行高随剩余空间收缩，保证整页不出现滚动条。 */
